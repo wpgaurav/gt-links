@@ -334,11 +334,18 @@ class GT_Link_License {
 			return;
 		}
 
-		if ( empty( $_GET['gt_link_check_update'] ) ) {
+		$current_page = isset( $_GET['page'] ) ? sanitize_key( (string) wp_unslash( $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( 'gt-links-license' !== $current_page ) {
 			return;
 		}
 
-		if ( ! wp_verify_nonce( sanitize_text_field( (string) wp_unslash( $_GET['_wpnonce'] ?? '' ) ), 'gt_link_check_update' ) ) {
+		$check_update = isset( $_GET['gt_link_check_update'] ) ? sanitize_text_field( (string) wp_unslash( $_GET['gt_link_check_update'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( '' === $check_update ) {
+			return;
+		}
+
+		$nonce = isset( $_GET['_wpnonce'] ) ? sanitize_text_field( (string) wp_unslash( $_GET['_wpnonce'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! wp_verify_nonce( $nonce, 'gt_link_check_update' ) ) {
 			return;
 		}
 
@@ -392,7 +399,8 @@ class GT_Link_License {
 			return;
 		}
 
-		if ( ! empty( $_GET['page'] ) && 'gt-links-license' === $_GET['page'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$current_page = isset( $_GET['page'] ) ? sanitize_key( (string) wp_unslash( $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( 'gt-links-license' === $current_page ) {
 			return;
 		}
 

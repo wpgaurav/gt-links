@@ -4,7 +4,7 @@ Tags: links, redirects, affiliate links, pretty links, marketing
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.2
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,6 +63,11 @@ The plugin checks request URI early and loads the matching slug from a unique in
 
 == Changelog ==
 
+= 1.0.2 =
+* Tightened license page request sanitization for manual update checks and notices.
+* Scoped manual license update checks to the license screen.
+* Minor internal hardening for FluentCart Pro licensing integration flow.
+
 = 1.0.1 =
 * Fixed uninstall to preserve links and settings data across reinstalls
 * Improved license page design to use plugin design system
@@ -83,6 +88,9 @@ The plugin checks request URI early and loads the matching slug from a unique in
 * LinkCentral-compatible CSV preset
 
 == Upgrade Notice ==
+
+= 1.0.2 =
+Security and stability improvements for license update checks.
 
 = 0.1.0 =
 Initial public release.

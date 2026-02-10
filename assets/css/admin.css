@@ -32,6 +32,7 @@ body.gt-links_page_gt-links-settings .wrap,
 body.gt-links_page_gt-links-import-export .wrap,
 body.gt-links_page_gt-links-license .wrap {
 	max-width: 1260px;
+	padding-bottom: 20px;
 }
 
 body.toplevel_page_gt-links .wrap h1,
@@ -65,8 +66,9 @@ body.gt-links_page_gt-links-license .form-table {
 	background: var(--gtlm-card);
 	border: 1px solid var(--gtlm-border);
 	border-radius: var(--gtlm-radius);
-	padding: 14px 16px;
-	margin-top: 8px;
+	padding: 16px 18px;
+	margin-top: 10px;
+	margin-bottom: 12px;
 }
 
 body.toplevel_page_gt-links .form-table th,
@@ -87,6 +89,8 @@ body.gt-links_page_gt-links-settings .form-table td,
 body.gt-links_page_gt-links-import-export .form-table td,
 body.gt-links_page_gt-links-license .form-table td {
 	color: var(--gtlm-muted);
+	padding-top: 12px;
+	padding-bottom: 12px;
 }
 
 body.toplevel_page_gt-links .form-table input[type="text"],
@@ -151,6 +155,7 @@ body.gt-links_page_gt-links-import-export .widefat {
 	border-radius: var(--gtlm-radius);
 	overflow: hidden;
 	background: var(--gtlm-card);
+	margin-top: 10px;
 }
 
 body.toplevel_page_gt-links .wp-list-table thead th,
@@ -176,6 +181,21 @@ body.toplevel_page_gt-links .subsubsub,
 body.toplevel_page_gt-links .tablenav,
 body.gt-links_page_gt-links-import-export .tablenav {
 	color: var(--gtlm-muted);
+}
+
+body.toplevel_page_gt-links .tablenav,
+body.gt-links_page_gt-links-import-export .tablenav {
+	padding: 8px 0;
+}
+
+body.toplevel_page_gt-links .tablenav.top,
+body.gt-links_page_gt-links-import-export .tablenav.top {
+	margin-bottom: 6px;
+}
+
+body.toplevel_page_gt-links .tablenav.bottom,
+body.gt-links_page_gt-links-import-export .tablenav.bottom {
+	margin-top: 6px;
 }
 
 .gtlm-quick-edit-row td {
@@ -254,6 +274,17 @@ body.gt-links_page_gt-links-settings ul li {
 	padding: 20px 24px;
 	max-width: 600px;
 	margin-top: 20px;
+}
+
+body.toplevel_page_gt-links .wrap .button,
+body.gt-links_page_gt-links-edit .wrap .button,
+body.gt-links_page_gt-links-categories .wrap .button,
+body.gt-links_page_gt-links-settings .wrap .button,
+body.gt-links_page_gt-links-import-export .wrap .button,
+body.gt-links_page_gt-links-license .wrap .button {
+	min-height: 34px;
+	line-height: 32px;
+	border-radius: 6px;
 }
 
 .gtlm-license-card h2 {
