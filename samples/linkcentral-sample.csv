@@ -1,0 +1,4 @@
+Link Name,Short Slug,Destination URL,Redirect Type,Rel Attributes,Noindex,Category,Tags,Notes
+FlyingPress Annual Deal,flyingpress,https://flyingpress.com/?ref=123,301,"nofollow,sponsored",1,Caching Plugins,"wordpress,caching,performance","Annual deal page"
+GeneratePress Theme,generatepress,https://generatepress.com/?ref=456,302,nofollow,0,Themes,"wordpress,themes","Main theme recommendation"
+Cloudflare Pro,cloudflare-pro,https://www.cloudflare.com/plans/pro/,307,,0,Hosting,"cdn,security,performance","Use during migration guides"
