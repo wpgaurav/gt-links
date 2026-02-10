@@ -69,6 +69,21 @@ class GT_Link_Redirect {
 		$status     = (int) apply_filters( 'gt_link_manager_redirect_code', (int) $link['redirect_type'], $link, $slug );
 		$status     = in_array( $status, array( 301, 302, 307 ), true ) ? $status : 301;
 
+		$target_url = trim( $target_url );
+		if ( '' === $target_url ) {
+			return;
+		}
+
+		// Support site-relative targets while keeping external URL redirects functional.
+		if ( str_starts_with( $target_url, '/' ) ) {
+			$target_url = home_url( $target_url );
+		}
+
+		$target_url = wp_sanitize_redirect( $target_url );
+		if ( '' === $target_url || ! wp_http_validate_url( $target_url ) ) {
+			return;
+		}
+
 		$rel_values = $this->parse_rel( (string) ( $link['rel'] ?? '' ) );
 		$rel_values = (array) apply_filters( 'gt_link_manager_rel_attributes', $rel_values, $link, $slug );
 
@@ -101,7 +116,9 @@ class GT_Link_Redirect {
 			}
 		}
 
-		wp_safe_redirect( $target_url, $status, 'GT Link Manager' );
+		nocache_headers();
+		header( 'X-Redirect-By: GT Link Manager', true );
+		header( 'Location: ' . $target_url, true, $status );
 		exit;
 	}
 
