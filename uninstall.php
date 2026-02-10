@@ -9,23 +9,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
-global $wpdb;
-
-$links_table = $wpdb->prefix . 'gt_links';
-$cats_table  = $wpdb->prefix . 'gt_link_categories';
-
-$wpdb->query(
-	$wpdb->prepare(
-		'DROP TABLE IF EXISTS %i',
-		$links_table
-	)
-);
-
-$wpdb->query(
-	$wpdb->prepare(
-		'DROP TABLE IF EXISTS %i',
-		$cats_table
-	)
-);
-
-delete_option( 'gt_link_manager_settings' );
+delete_option( 'gt_link_license' );
+delete_option( 'gt_link_license_last_check' );
+delete_transient( 'gt_link_update_info' );
+delete_transient( 'gt_link_update_check_result' );
