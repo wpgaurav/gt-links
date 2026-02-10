@@ -439,8 +439,8 @@ class GT_Link_License {
 		echo '<h1>' . esc_html__( 'GT Link Manager - License', 'gt-link-manager' ) . '</h1>';
 
 		// Updates card.
-		echo '<div class="card" style="max-width: 600px; margin-top: 20px;">';
-		echo '<h2 style="margin-top: 0;">' . esc_html__( 'Updates', 'gt-link-manager' ) . '</h2>';
+		echo '<div class="gtlm-license-card">';
+		echo '<h2>' . esc_html__( 'Updates', 'gt-link-manager' ) . '</h2>';
 
 		if ( 'valid' === $status ) {
 			echo '<p>' . esc_html__( 'Check for plugin updates from the license server.', 'gt-link-manager' ) . '</p>';
@@ -448,11 +448,11 @@ class GT_Link_License {
 
 			if ( ! empty( $update_result ) && is_array( $update_result ) ) {
 				if ( ! empty( $update_result['available'] ) ) {
-					echo '<div style="background: #e7f3ff; border: 1px solid #b6d9ff; padding: 10px 12px; border-radius: 4px;">';
+					echo '<div class="gtlm-update-notice gtlm-update-notice--available">';
 					printf( esc_html__( 'Update found. Latest version: %s', 'gt-link-manager' ), esc_html( $update_result['version'] ?: __( 'Unknown', 'gt-link-manager' ) ) );
 					echo '</div>';
 				} else {
-					echo '<div style="background: #f1f5f9; border: 1px solid #e2e8f0; padding: 10px 12px; border-radius: 4px;">';
+					echo '<div class="gtlm-update-notice gtlm-update-notice--current">';
 					esc_html_e( 'No updates found. You are on the latest version.', 'gt-link-manager' );
 					echo '</div>';
 				}
@@ -464,12 +464,12 @@ class GT_Link_License {
 		echo '</div>';
 
 		// License status card.
-		echo '<div class="card" style="max-width: 600px; margin-top: 20px;">';
-		echo '<h2 style="margin-top: 0;">' . esc_html__( 'License Status', 'gt-link-manager' ) . '</h2>';
+		echo '<div class="gtlm-license-card">';
+		echo '<h2>' . esc_html__( 'License Status', 'gt-link-manager' ) . '</h2>';
 
 		if ( 'valid' === $status ) {
-			echo '<div style="background: #d4edda; border: 1px solid #c3e6cb; padding: 12px 16px; border-radius: 4px; margin-bottom: 16px;">';
-			echo '<strong style="color: #155724;">&#10003; ' . esc_html__( 'License Active', 'gt-link-manager' ) . '</strong>';
+			echo '<div class="gtlm-license-status gtlm-license-status--active">';
+			echo '<strong>&#10003; ' . esc_html__( 'License Active', 'gt-link-manager' ) . '</strong>';
 			if ( $expires && 'lifetime' !== $expires ) {
 				echo '<br><small>' . sprintf( esc_html__( 'Expires: %s', 'gt-link-manager' ), esc_html( $expires ) ) . '</small>';
 			} elseif ( 'lifetime' === $expires ) {
@@ -480,13 +480,13 @@ class GT_Link_License {
 			echo '<form method="post">';
 			wp_nonce_field( 'gt_link_license_nonce' );
 			echo '<input type="hidden" name="gt_license_action" value="deactivate">';
-			echo '<p><code style="font-size: 14px; padding: 4px 8px;">' . esc_html( $this->mask_key( $key ) ) . '</code></p>';
+			echo '<p><code class="gtlm-license-key">' . esc_html( $this->mask_key( $key ) ) . '</code></p>';
 			echo '<p><input type="submit" class="button" value="' . esc_attr__( 'Deactivate License', 'gt-link-manager' ) . '"></p>';
 			echo '</form>';
 
 		} elseif ( 'expired' === $status ) {
-			echo '<div style="background: #fff3cd; border: 1px solid #ffc107; padding: 12px 16px; border-radius: 4px; margin-bottom: 16px;">';
-			echo '<strong style="color: #856404;">&#9888; ' . esc_html__( 'License Expired', 'gt-link-manager' ) . '</strong>';
+			echo '<div class="gtlm-license-status gtlm-license-status--expired">';
+			echo '<strong>&#9888; ' . esc_html__( 'License Expired', 'gt-link-manager' ) . '</strong>';
 			if ( $expires ) {
 				echo '<br><small>' . sprintf( esc_html__( 'Expired: %s', 'gt-link-manager' ), esc_html( $expires ) ) . '</small>';
 			}
@@ -500,7 +500,7 @@ class GT_Link_License {
 			wp_nonce_field( 'gt_link_license_nonce' );
 			echo '<input type="hidden" name="gt_license_action" value="activate">';
 			echo '<p><label for="license_key"><strong>' . esc_html__( 'Or enter a new license key:', 'gt-link-manager' ) . '</strong></label><br>';
-			echo '<input type="text" id="license_key" name="license_key" class="regular-text" placeholder="' . esc_attr__( 'Enter license key...', 'gt-link-manager' ) . '" style="margin-top: 4px;"></p>';
+			echo '<input type="text" id="license_key" name="license_key" class="regular-text" placeholder="' . esc_attr__( 'Enter license key...', 'gt-link-manager' ) . '"></p>';
 			echo '<p><input type="submit" class="button button-primary" value="' . esc_attr__( 'Activate License', 'gt-link-manager' ) . '"></p>';
 			echo '</form>';
 
@@ -511,7 +511,7 @@ class GT_Link_License {
 			wp_nonce_field( 'gt_link_license_nonce' );
 			echo '<input type="hidden" name="gt_license_action" value="activate">';
 			echo '<p><label for="license_key"><strong>' . esc_html__( 'License Key', 'gt-link-manager' ) . '</strong></label><br>';
-			echo '<input type="text" id="license_key" name="license_key" class="regular-text" placeholder="' . esc_attr__( 'Enter license key...', 'gt-link-manager' ) . '" style="margin-top: 4px;"></p>';
+			echo '<input type="text" id="license_key" name="license_key" class="regular-text" placeholder="' . esc_attr__( 'Enter license key...', 'gt-link-manager' ) . '"></p>';
 			echo '<p><input type="submit" class="button button-primary" value="' . esc_attr__( 'Activate License', 'gt-link-manager' ) . '"></p>';
 			echo '</form>';
 
