@@ -43,6 +43,7 @@ require_once GT_LINK_MANAGER_PATH . 'includes/class-gt-link-admin.php';
 require_once GT_LINK_MANAGER_PATH . 'includes/class-gt-link-rest-api.php';
 require_once GT_LINK_MANAGER_PATH . 'includes/class-gt-link-block-editor.php';
 require_once GT_LINK_MANAGER_PATH . 'includes/class-gt-link-import.php';
+require_once GT_LINK_MANAGER_PATH . 'includes/class-gt-link-license.php';
 
 register_activation_hook( GT_LINK_MANAGER_FILE, array( 'GT_Link_Activator', 'activate' ) );
 register_deactivation_hook( GT_LINK_MANAGER_FILE, array( 'GT_Link_Deactivator', 'deactivate' ) );
@@ -60,5 +61,6 @@ function gt_link_manager_bootstrap(): void {
 	GT_Link_Admin::init( $db, $settings );
 	GT_Link_REST_API::init( $db, $settings );
 	GT_Link_Block_Editor::init( $settings );
+	GT_Link_License::init();
 }
 add_action( 'plugins_loaded', 'gt_link_manager_bootstrap' );

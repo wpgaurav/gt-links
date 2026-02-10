@@ -94,7 +94,7 @@ class GT_Link_Admin {
 		}
 
 		$page = sanitize_key( (string) wp_unslash( $_GET['page'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( ! in_array( $page, array( 'gt-links', 'gt-links-edit', 'gt-links-categories', 'gt-links-settings', 'gt-links-import-export' ), true ) ) {
+		if ( ! in_array( $page, array( 'gt-links', 'gt-links-edit', 'gt-links-categories', 'gt-links-settings', 'gt-links-import-export', 'gt-links-license' ), true ) ) {
 			return;
 		}
 
@@ -181,7 +181,7 @@ class GT_Link_Admin {
 		}
 
 		$page = sanitize_key( (string) wp_unslash( $_GET['page'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( ! in_array( $page, array( 'gt-links', 'gt-links-edit', 'gt-links-categories', 'gt-links-settings', 'gt-links-import-export' ), true ) ) {
+		if ( ! in_array( $page, array( 'gt-links', 'gt-links-edit', 'gt-links-categories', 'gt-links-settings', 'gt-links-import-export', 'gt-links-license' ), true ) ) {
 			return;
 		}
 

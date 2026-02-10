@@ -76,41 +76,6 @@ Capability check defaults to `edit_posts` (filterable).
 
 This repo currently ships static plugin assets directly (no JS build pipeline required for the included files).
 
-## Development Commands
-
-Run from plugin root:
-
-```bash
-# PHP syntax check (all plugin PHP files)
-find . -name '*.php' -print0 | xargs -0 -n1 php -l
-```
-
-```bash
-# Quick git status
-git status --short
-```
-
-```bash
-# Regenerate PNGs from SVG files inside graphics/
-cd graphics
-for f in *.svg; do rsvg-convert -f png -w 2560 -o "${f%.svg}.png" "$f"; done
-```
-
-```bash
-# Create raster icon sizes up to 512px
-cd graphics
-mkdir -p raster
-for s in 32 64 96 128 192 256 384 512; do
-  rsvg-convert -f png -w "$s" -h "$s" -o "raster/gt-link-manager-icon-${s}.png" gt-link-manager-icon.svg
-done
-```
-
-```bash
-# Generate 2400x1260 banner from hero SVG
-cd graphics
-rsvg-convert -f png -w 2400 -h 1260 -o raster/gt-link-manager-banner-2400x1260.png gt-link-manager-hero.svg
-```
-
 ## File Structure
 
 ```text

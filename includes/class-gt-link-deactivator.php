@@ -15,5 +15,6 @@ class GT_Link_Deactivator {
 	 */
 	public static function deactivate(): void {
 		flush_rewrite_rules();
+		GT_Link_License::clear_cron();
 	}
 }
