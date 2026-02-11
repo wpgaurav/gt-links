@@ -20,12 +20,16 @@ cp -r assets "${BUILD_DIR}/${SLUG}/"
 cp -r blocks "${BUILD_DIR}/${SLUG}/"
 cp -r languages "${BUILD_DIR}/${SLUG}/"
 
-# Remove block source (only ship build output).
+# Remove block source and dev artifacts (only ship build output).
 find "${BUILD_DIR}/${SLUG}/blocks" -type d -name "src" -exec rm -rf {} + 2>/dev/null || true
+find "${BUILD_DIR}/${SLUG}/blocks" -type d -name "node_modules" -exec rm -rf {} + 2>/dev/null || true
+find "${BUILD_DIR}/${SLUG}/blocks" -name "package.json" -delete 2>/dev/null || true
+find "${BUILD_DIR}/${SLUG}/blocks" -name "package-lock.json" -delete 2>/dev/null || true
 
-# Clean macOS junk.
+# Clean junk files.
 find "${BUILD_DIR}" -name ".DS_Store" -delete 2>/dev/null || true
 find "${BUILD_DIR}" -name "__MACOSX" -exec rm -rf {} + 2>/dev/null || true
+find "${BUILD_DIR}" -name ".gitignore" -delete 2>/dev/null || true
 
 # Build zip.
 cd "${BUILD_DIR}"

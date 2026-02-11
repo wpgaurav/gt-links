@@ -4,7 +4,7 @@ Tags: links, redirects, affiliate links, pretty links, marketing
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.2
-Stable tag: 1.0.3
+Stable tag: 1.1.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,6 +63,33 @@ The plugin checks request URI early and loads the matching slug from a unique in
 
 == Changelog ==
 
+= 1.1.5 =
+* Fixed auto-updater not detecting new versions due to early exit on empty checked transient.
+
+= 1.1.4 =
+* Anchor popover to selected text using useAnchor from @wordpress/rich-text.
+
+= 1.1.3 =
+* Fixed format registration conflict with core/underline on WP 6.9+ (both used bare span tag).
+* Added unique className to avoid tagName collision.
+
+= 1.1.2 =
+* Switch to RichTextToolbarButton for standard format toolbar integration.
+
+= 1.1.1 =
+* Force-inject format into RichText allowedFormats for reliable toolbar display.
+
+= 1.1.0 =
+* Rebuilt block editor link inserter with @wordpress/scripts build pipeline.
+* Fixed toolbar button not appearing in block editor.
+* Proper dependency resolution via index.asset.php.
+
+= 1.0.4 =
+* Fixed toolbar button registration in block editor for GT Link inserter.
+* Added selected-text autofill in GT Link inserter search field.
+* Improved redirect detection for WordPress installs in subdirectories.
+* Cleared update caches more reliably on license state changes.
+
 = 1.0.3 =
 * Enhance block editor integration with additional dependencies and improved format registration
 
@@ -92,8 +119,26 @@ The plugin checks request URI early and loads the matching slug from a unique in
 
 == Upgrade Notice ==
 
-= 1.0.2 =
-Security and stability improvements for license update checks.
+= 1.1.5 =
+Fixes auto-updater not detecting available updates.
+
+= 1.1.4 =
+Positions link search popover near selected text instead of top-left corner.
+
+= 1.1.3 =
+Fixes format not registering on WP 6.9+ due to tagName conflict with core/underline.
+
+= 1.1.2 =
+Uses standard RichTextToolbarButton for reliable format toolbar placement.
+
+= 1.1.1 =
+Ensures GT Link toolbar button appears on all RichText instances.
+
+= 1.1.0 =
+Rebuilt block editor link inserter with proper WordPress scripts build. Fixes toolbar button not showing.
+
+= 1.0.4 =
+Improves block editor toolbar behavior and redirect reliability.
 
 = 0.1.0 =
 Initial public release.

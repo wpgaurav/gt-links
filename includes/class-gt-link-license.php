@@ -234,7 +234,11 @@ class GT_Link_License {
 	 * @return object
 	 */
 	public function check_for_update( $transient_data ) {
-		if ( empty( $transient_data->checked ) ) {
+		if ( ! is_object( $transient_data ) ) {
+			$transient_data = new stdClass();
+		}
+
+		if ( ! empty( $transient_data->response[ $this->plugin_basename ] ) ) {
 			return $transient_data;
 		}
 

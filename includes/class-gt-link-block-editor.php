@@ -26,18 +26,26 @@ class GT_Link_Block_Editor {
 	}
 
 	public function enqueue_assets(): void {
-		$asset_url  = GT_LINK_MANAGER_URL . 'blocks/link-inserter/build/index.js';
-		$asset_path = GT_LINK_MANAGER_PATH . 'blocks/link-inserter/build/index.js';
+		$build_dir  = GT_LINK_MANAGER_PATH . 'blocks/link-inserter/build/';
+		$build_url  = GT_LINK_MANAGER_URL . 'blocks/link-inserter/build/';
+		$asset_file = $build_dir . 'index.asset.php';
 
-		if ( ! file_exists( $asset_path ) ) {
+		if ( ! file_exists( $build_dir . 'index.js' ) ) {
 			return;
 		}
 
+		$asset = file_exists( $asset_file )
+			? require $asset_file
+			: array(
+				'dependencies' => array( 'wp-block-editor', 'wp-components', 'wp-element', 'wp-rich-text', 'wp-i18n', 'wp-api-fetch', 'wp-dom-ready' ),
+				'version'      => filemtime( $build_dir . 'index.js' ),
+			);
+
 		wp_enqueue_script(
 			'gt-link-manager-editor',
-			$asset_url,
-			array( 'wp-api-fetch', 'wp-rich-text', 'wp-block-editor', 'wp-editor', 'wp-components', 'wp-element', 'wp-i18n', 'wp-dom-ready' ),
-			GT_LINK_MANAGER_VERSION,
+			$build_url . 'index.js',
+			$asset['dependencies'],
+			$asset['version'],
 			true
 		);
 

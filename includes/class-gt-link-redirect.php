@@ -146,6 +146,16 @@ class GT_Link_Redirect {
 
 		$path   = trim( (string) wp_parse_url( $request_uri, PHP_URL_PATH ), '/' );
 		$prefix = trim( $this->settings->prefix(), '/' );
+		$home_path = trim( (string) wp_parse_url( home_url( '/' ), PHP_URL_PATH ), '/' );
+
+		// Support WordPress installs in subdirectories like /blog.
+		if ( '' !== $home_path ) {
+			if ( $path === $home_path ) {
+				$path = '';
+			} elseif ( str_starts_with( $path, $home_path . '/' ) ) {
+				$path = substr( $path, strlen( $home_path ) + 1 );
+			}
+		}
 
 		if ( '' === $path || '' === $prefix ) {
 			return '';
