@@ -234,6 +234,11 @@ class GT_Link_Import {
 	}
 
 	private function preview_csv(): void {
+		$existing_preview = $this->get_preview_state();
+		if ( is_array( $existing_preview ) ) {
+			$this->cleanup_preview( $existing_preview );
+		}
+
 		if ( ! isset( $_FILES['import_file']['tmp_name'] ) ) {
 			$this->redirect_notice( 'import_failed' );
 		}

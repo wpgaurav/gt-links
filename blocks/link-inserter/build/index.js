@@ -1,12 +1,13 @@
 (function (wp, config) {
-	if (!wp || !wp.richText || !wp.richText.registerFormatType) {
+	if (!wp || !wp.richText || !wp.richText.registerFormatType || !wp.element || !wp.components || !wp.apiFetch) {
 		return;
 	}
 
 	var __ = wp.i18n.__;
 	var registerFormatType = wp.richText.registerFormatType;
+	var getFormatType = wp.richText.getFormatType;
 	var applyFormat = wp.richText.applyFormat;
-	var RichTextToolbarButton = wp.blockEditor.RichTextToolbarButton;
+	var RichTextToolbarButton = (wp.blockEditor && wp.blockEditor.RichTextToolbarButton) || (wp.editor && wp.editor.RichTextToolbarButton);
 	var Popover = wp.components.Popover;
 	var TextControl = wp.components.TextControl;
 	var Button = wp.components.Button;
@@ -20,6 +21,10 @@
 	apiFetch.use(apiFetch.createNonceMiddleware(config.nonce));
 
 	var formatName = 'gt-link-manager/link-inserter';
+
+	if (!RichTextToolbarButton || !Popover || !TextControl || !Button) {
+		return;
+	}
 
 	function LinkInserterEdit(props) {
 		var value = props.value;
@@ -157,10 +162,22 @@
 		);
 	}
 
-	registerFormatType(formatName, {
-		title: __('GT Link', 'gt-link-manager'),
-		tagName: 'span',
-		className: null,
-		edit: LinkInserterEdit,
-	});
+	function register() {
+		if (typeof getFormatType === 'function' && getFormatType(formatName)) {
+			return;
+		}
+
+		registerFormatType(formatName, {
+			title: __('GT Link', 'gt-link-manager'),
+			tagName: 'span',
+			className: null,
+			edit: LinkInserterEdit,
+		});
+	}
+
+	if (typeof wp.domReady === 'function') {
+		wp.domReady(register);
+	} else {
+		register();
+	}
 })(window.wp, window.gtLinkManagerEditor || {});

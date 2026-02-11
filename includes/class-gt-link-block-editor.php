@@ -36,7 +36,7 @@ class GT_Link_Block_Editor {
 		wp_enqueue_script(
 			'gt-link-manager-editor',
 			$asset_url,
-			array( 'wp-api-fetch', 'wp-rich-text', 'wp-block-editor', 'wp-components', 'wp-element', 'wp-i18n' ),
+			array( 'wp-api-fetch', 'wp-rich-text', 'wp-block-editor', 'wp-editor', 'wp-components', 'wp-element', 'wp-i18n', 'wp-dom-ready' ),
 			GT_LINK_MANAGER_VERSION,
 			true
 		);

@@ -4,7 +4,7 @@ Tags: links, redirects, affiliate links, pretty links, marketing
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.2
-Stable tag: 1.0.2
+Stable tag: 1.0.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,9 @@ The plugin checks request URI early and loads the matching slug from a unique in
 5. Settings with diagnostics
 
 == Changelog ==
+
+= 1.0.3 =
+* Enhance block editor integration with additional dependencies and improved format registration
 
 = 1.0.2 =
 * Tightened license page request sanitization for manual update checks and notices.

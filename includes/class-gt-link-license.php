@@ -155,6 +155,7 @@ class GT_Link_License {
 		update_option( self::OPTION_KEY, $license_data );
 		update_option( self::LAST_CHECK, time() );
 		delete_transient( self::UPDATE_CACHE );
+		delete_site_transient( 'update_plugins' );
 
 		return $license_data;
 	}
@@ -187,6 +188,7 @@ class GT_Link_License {
 		update_option( self::OPTION_KEY, $default_data );
 		delete_option( self::LAST_CHECK );
 		delete_transient( self::UPDATE_CACHE );
+		delete_site_transient( 'update_plugins' );
 
 		return $default_data;
 	}
@@ -220,6 +222,8 @@ class GT_Link_License {
 		if ( 'valid' !== $remote_status ) {
 			$license['status'] = $remote_status;
 			update_option( self::OPTION_KEY, $license );
+			delete_transient( self::UPDATE_CACHE );
+			delete_site_transient( 'update_plugins' );
 		}
 
 		update_option( self::LAST_CHECK, time() );
