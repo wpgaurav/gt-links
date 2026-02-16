@@ -4,7 +4,7 @@ Tags: links, redirects, affiliate links, pretty links, marketing
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.2
-Stable tag: 1.1.6
+Stable tag: 1.1.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,10 @@ The plugin checks request URI early and loads the matching slug from a unique in
 5. Settings with diagnostics
 
 == Changelog ==
+
+= 1.1.7 =
+* Block editor: Fixed editor scroll jump when opening GT Link popover from the toolbar.
+* Block editor: Improved search input focus behavior so opening popover does not move viewport.
 
 = 1.1.6 =
 * REST API: Added full pagination (page, per_page, category_id, orderby, order) to GET /links endpoint.
@@ -125,6 +129,9 @@ The plugin checks request URI early and loads the matching slug from a unique in
 * LinkCentral-compatible CSV preset
 
 == Upgrade Notice ==
+
+= 1.1.7 =
+Fixes editor scroll jump when opening GT Link popover from the toolbar.
 
 = 1.1.6 =
 Full REST API pagination, args validation on all write endpoints, XSS fix in admin quick edit.

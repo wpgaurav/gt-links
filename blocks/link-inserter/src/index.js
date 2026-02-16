@@ -7,7 +7,7 @@ import {
 	Spinner,
 	Notice,
 } from '@wordpress/components';
-import { useState, useEffect } from '@wordpress/element';
+import { useState, useEffect, useRef } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 
@@ -29,6 +29,7 @@ function LinkInserterEdit( { value, onChange, isActive, activeAttributes, conten
 	const [ results, setResults ] = useState( [] );
 	const [ loading, setLoading ] = useState( false );
 	const [ error, setError ] = useState( '' );
+	const queryInputRef = useRef( null );
 
 	useEffect( () => {
 		if ( ! isOpen ) {
@@ -64,6 +65,30 @@ function LinkInserterEdit( { value, onChange, isActive, activeAttributes, conten
 		};
 	}, [ query, isOpen ] );
 
+	useEffect( () => {
+		if ( ! isOpen ) {
+			return;
+		}
+
+		const input = queryInputRef.current;
+		if ( ! input || typeof input.focus !== 'function' ) {
+			return;
+		}
+
+		try {
+			input.focus( { preventScroll: true } );
+		} catch {
+			input.focus();
+		}
+	}, [ isOpen ] );
+
+	function stopDefaultEvent( event ) {
+		if ( ! event ) {
+			return;
+		}
+		event.preventDefault();
+	}
+
 	function insertLink( item ) {
 		const rel = ( item.rel || '' )
 			.split( ',' )
@@ -96,20 +121,26 @@ function LinkInserterEdit( { value, onChange, isActive, activeAttributes, conten
 		return String( value.text ).slice( value.start, value.end ).trim();
 	}
 
+	function togglePopover( event ) {
+		stopDefaultEvent( event );
+
+		if ( isOpen ) {
+			setIsOpen( false );
+			return;
+		}
+
+		const sel = getSelectedText();
+		setQuery( sel || '' );
+		setIsOpen( true );
+	}
+
 	return (
 		<>
 			<RichTextToolbarButton
 				icon="admin-links"
 				title={ __( 'GT Link', 'gt-link-manager' ) }
-				onClick={ () => {
-					if ( isOpen ) {
-						setIsOpen( false );
-						return;
-					}
-					const sel = getSelectedText();
-					if ( sel ) setQuery( sel );
-					setIsOpen( true );
-				} }
+				onClick={ togglePopover }
+				onMouseDown={ stopDefaultEvent }
 				isActive={
 					isActive ||
 					!! ( activeAttributes && activeAttributes.url )
@@ -120,6 +151,7 @@ function LinkInserterEdit( { value, onChange, isActive, activeAttributes, conten
 					anchor={ popoverAnchor }
 					onClose={ () => setIsOpen( false ) }
 					placement="bottom-start"
+					focusOnMount={ false }
 				>
 					<div style={ { padding: '12px', minWidth: '300px' } }>
 						<TextControl
@@ -133,7 +165,7 @@ function LinkInserterEdit( { value, onChange, isActive, activeAttributes, conten
 								'Type a link name or slug',
 								'gt-link-manager'
 							) }
-							autoFocus
+							ref={ queryInputRef }
 							__nextHasNoMarginBottom
 						/>
 						{ loading && <Spinner /> }
