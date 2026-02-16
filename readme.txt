@@ -4,7 +4,7 @@ Tags: links, redirects, affiliate links, pretty links, marketing
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.2
-Stable tag: 1.1.5
+Stable tag: 1.1.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,6 +63,13 @@ The plugin checks request URI early and loads the matching slug from a unique in
 
 == Changelog ==
 
+= 1.1.6 =
+* REST API: Added full pagination (page, per_page, category_id, orderby, order) to GET /links endpoint.
+* REST API: Added args schema validation to all write endpoints (links, categories, bulk-category).
+* Security: Replaced innerHTML with DOM methods in admin quick edit to prevent XSS.
+* DB: Added rel whitelist validation on filter queries.
+* Build: build.sh now compiles block editor assets before packaging.
+
 = 1.1.5 =
 * Fixed auto-updater not detecting new versions due to early exit on empty checked transient.
 
@@ -118,6 +125,9 @@ The plugin checks request URI early and loads the matching slug from a unique in
 * LinkCentral-compatible CSV preset
 
 == Upgrade Notice ==
+
+= 1.1.6 =
+Full REST API pagination, args validation on all write endpoints, XSS fix in admin quick edit.
 
 = 1.1.5 =
 Fixes auto-updater not detecting available updates.

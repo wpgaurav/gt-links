@@ -253,8 +253,11 @@ class GT_Link_DB {
 		}
 
 		if ( ! empty( $filters['rel'] ) ) {
-			$sql .= ' AND FIND_IN_SET(%s, rel)';
-			$params[] = sanitize_key( (string) $filters['rel'] );
+			$rel_value = sanitize_key( (string) $filters['rel'] );
+			if ( in_array( $rel_value, array( 'nofollow', 'sponsored', 'ugc' ), true ) ) {
+				$sql     .= ' AND FIND_IN_SET(%s, rel)';
+				$params[] = $rel_value;
+			}
 		}
 
 		if ( ! empty( $params ) ) {
@@ -282,7 +285,7 @@ class GT_Link_DB {
 		$orderby         = in_array( $orderby, $allowed_orderby, true ) ? $orderby : 'id';
 		$order           = 'ASC' === strtoupper( $order ) ? 'ASC' : 'DESC';
 		$page            = max( 1, $page );
-		$per_page        = max( 1, min( 200, $per_page ) );
+		$per_page        = max( 1, $per_page );
 		$offset          = ( $page - 1 ) * $per_page;
 
 		$sql    = 'SELECT id, name, slug, url, redirect_type, rel, noindex, category_id, tags, notes, created_at, updated_at FROM ' . self::links_table() . ' WHERE 1=1';
@@ -307,8 +310,11 @@ class GT_Link_DB {
 		}
 
 		if ( ! empty( $filters['rel'] ) ) {
-			$sql .= ' AND FIND_IN_SET(%s, rel)';
-			$params[] = sanitize_key( (string) $filters['rel'] );
+			$rel_value = sanitize_key( (string) $filters['rel'] );
+			if ( in_array( $rel_value, array( 'nofollow', 'sponsored', 'ugc' ), true ) ) {
+				$sql     .= ' AND FIND_IN_SET(%s, rel)';
+				$params[] = $rel_value;
+			}
 		}
 
 		$sql .= " ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d";
@@ -355,8 +361,11 @@ class GT_Link_DB {
 		}
 
 		if ( ! empty( $filters['rel'] ) ) {
-			$sql .= ' AND FIND_IN_SET(%s, rel)';
-			$params[] = sanitize_key( (string) $filters['rel'] );
+			$rel_value = sanitize_key( (string) $filters['rel'] );
+			if ( in_array( $rel_value, array( 'nofollow', 'sponsored', 'ugc' ), true ) ) {
+				$sql     .= ' AND FIND_IN_SET(%s, rel)';
+				$params[] = $rel_value;
+			}
 		}
 
 		$sql .= ' ORDER BY id DESC';

@@ -38,20 +38,48 @@ class GT_Link_REST_API {
 					'callback'            => array( $this, 'get_links' ),
 					'permission_callback' => array( $this, 'permissions_check' ),
 					'args'                => array(
-						'search'   => array(
+						'search'        => array(
 							'type'              => 'string',
 							'required'          => false,
 							'default'           => '',
 							'sanitize_callback' => 'sanitize_text_field',
 						),
-						'per_page' => array(
+						'page'          => array(
+							'type'              => 'integer',
+							'required'          => false,
+							'default'           => 1,
+							'sanitize_callback' => 'absint',
+							'validate_callback' => static function ( $value ): bool {
+								return (int) $value >= 1;
+							},
+						),
+						'per_page'      => array(
 							'type'              => 'integer',
 							'required'          => false,
 							'default'           => 20,
-							'sanitize_callback' => 'absint',
 							'validate_callback' => static function ( $value ): bool {
 								$int = (int) $value;
-								return $int >= 1 && $int <= 100;
+								return -1 === $int || ( $int >= 1 && $int <= 200 );
+							},
+						),
+						'category_id'   => array(
+							'type'              => 'integer',
+							'required'          => false,
+							'default'           => 0,
+							'sanitize_callback' => 'absint',
+						),
+						'orderby'       => array(
+							'type'              => 'string',
+							'required'          => false,
+							'default'           => 'id',
+							'sanitize_callback' => 'sanitize_key',
+						),
+						'order'         => array(
+							'type'              => 'string',
+							'required'          => false,
+							'default'           => 'DESC',
+							'sanitize_callback' => static function ( $value ): string {
+								return 'ASC' === strtoupper( (string) $value ) ? 'ASC' : 'DESC';
 							},
 						),
 					),
@@ -60,6 +88,7 @@ class GT_Link_REST_API {
 					'methods'             => WP_REST_Server::CREATABLE,
 					'callback'            => array( $this, 'create_link' ),
 					'permission_callback' => array( $this, 'permissions_check' ),
+					'args'                => $this->link_write_args(),
 				),
 			)
 		);
@@ -77,6 +106,7 @@ class GT_Link_REST_API {
 					'methods'             => WP_REST_Server::EDITABLE,
 					'callback'            => array( $this, 'update_link' ),
 					'permission_callback' => array( $this, 'permissions_check' ),
+					'args'                => $this->link_write_args(),
 				),
 				array(
 					'methods'             => WP_REST_Server::DELETABLE,
@@ -93,6 +123,27 @@ class GT_Link_REST_API {
 				'methods'             => WP_REST_Server::CREATABLE,
 				'callback'            => array( $this, 'bulk_category_action' ),
 				'permission_callback' => array( $this, 'permissions_check' ),
+				'args'                => array(
+					'link_ids'    => array(
+						'type'              => 'array',
+						'required'          => true,
+						'items'             => array( 'type' => 'integer' ),
+						'validate_callback' => static function ( $value ): bool {
+							return is_array( $value ) && ! empty( $value );
+						},
+					),
+					'category_id' => array(
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					),
+					'mode'        => array(
+						'type'              => 'string',
+						'required'          => false,
+						'default'           => 'move',
+						'enum'              => array( 'move', 'copy' ),
+					),
+				),
 			)
 		);
 
@@ -104,11 +155,20 @@ class GT_Link_REST_API {
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'get_categories' ),
 					'permission_callback' => array( $this, 'permissions_check' ),
+					'args'                => array(
+						'search' => array(
+							'type'              => 'string',
+							'required'          => false,
+							'default'           => '',
+							'sanitize_callback' => 'sanitize_text_field',
+						),
+					),
 				),
 				array(
 					'methods'             => WP_REST_Server::CREATABLE,
 					'callback'            => array( $this, 'create_category' ),
 					'permission_callback' => array( $this, 'permissions_check' ),
+					'args'                => $this->category_write_args(),
 				),
 			)
 		);
@@ -121,6 +181,7 @@ class GT_Link_REST_API {
 					'methods'             => WP_REST_Server::EDITABLE,
 					'callback'            => array( $this, 'update_category' ),
 					'permission_callback' => array( $this, 'permissions_check' ),
+					'args'                => $this->category_write_args(),
 				),
 				array(
 					'methods'             => WP_REST_Server::DELETABLE,
@@ -137,26 +198,60 @@ class GT_Link_REST_API {
 	}
 
 	public function get_links( WP_REST_Request $request ): WP_REST_Response {
-		$search   = (string) $request->get_param( 'search' );
-		$per_page = (int) $request->get_param( 'per_page' );
-		$rows     = $this->db->search_links( $search, $per_page );
-		$prefix   = trim( $this->settings->prefix(), '/' );
+		$search      = (string) $request->get_param( 'search' );
+		$page        = (int) $request->get_param( 'page' );
+		$per_page    = (int) $request->get_param( 'per_page' );
+		$category_id = (int) $request->get_param( 'category_id' );
+		$orderby     = (string) $request->get_param( 'orderby' );
+		$order       = (string) $request->get_param( 'order' );
+
+		$filters = array();
+		if ( '' !== $search ) {
+			$filters['search'] = $search;
+		}
+		if ( $category_id > 0 ) {
+			$filters['category_id'] = $category_id;
+		}
+
+		$total = $this->db->count_links( $filters );
+
+		if ( -1 === $per_page ) {
+			$rows        = $this->db->list_links( $filters, 1, max( $total, 1 ), $orderby, $order );
+			$total_pages = 1;
+		} else {
+			$rows        = $this->db->list_links( $filters, $page, $per_page, $orderby, $order );
+			$total_pages = $per_page > 0 ? (int) ceil( $total / $per_page ) : 1;
+		}
+
+		$prefix = trim( $this->settings->prefix(), '/' );
 
 		$items = array_map(
 			static function ( array $row ) use ( $prefix ): array {
 				$slug = (string) $row['slug'];
 				return array(
-					'id'   => (int) $row['id'],
-					'name' => (string) $row['name'],
-					'slug' => $slug,
-					'url'  => home_url( '/' . $prefix . '/' . $slug ),
-					'rel'  => (string) $row['rel'],
+					'id'            => (int) $row['id'],
+					'name'          => (string) $row['name'],
+					'slug'          => $slug,
+					'url'           => home_url( '/' . $prefix . '/' . $slug ),
+					'target_url'    => (string) $row['url'],
+					'redirect_type' => (int) $row['redirect_type'],
+					'rel'           => (string) $row['rel'],
+					'noindex'       => (int) $row['noindex'],
+					'category_id'   => (int) $row['category_id'],
+					'tags'          => (string) ( $row['tags'] ?? '' ),
+					'notes'         => (string) ( $row['notes'] ?? '' ),
+					'created_at'    => (string) ( $row['created_at'] ?? '' ),
+					'updated_at'    => (string) ( $row['updated_at'] ?? '' ),
 				);
 			},
 			$rows
 		);
 
-		return rest_ensure_response( $items );
+		$response = rest_ensure_response( $items );
+		$response->header( 'X-WP-Total', (string) $total );
+		$response->header( 'X-WP-TotalPages', (string) $total_pages );
+
+		return $response;
 	}
 
 	/**
@@ -531,5 +626,94 @@ class GT_Link_REST_API {
 		}
 
 		return $slug;
+	}
+
+	/**
+	 * @return array<string, array<string, mixed>>
+	 */
+	private function link_write_args(): array {
+		return array(
+			'name'          => array(
+				'type'              => 'string',
+				'required'          => false,
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'slug'          => array(
+				'type'              => 'string',
+				'required'          => false,
+				'sanitize_callback' => 'sanitize_title',
+			),
+			'url'           => array(
+				'type'              => 'string',
+				'required'          => false,
+				'format'            => 'uri',
+				'sanitize_callback' => 'esc_url_raw',
+			),
+			'redirect_type' => array(
+				'type'              => 'integer',
+				'required'          => false,
+				'default'           => 301,
+				'enum'              => array( 301, 302, 307 ),
+			),
+			'rel'           => array(
+				'type'              => array( 'string', 'array' ),
+				'required'          => false,
+				'default'           => '',
+			),
+			'noindex'       => array(
+				'type'              => 'integer',
+				'required'          => false,
+				'default'           => 0,
+				'enum'              => array( 0, 1 ),
+			),
+			'category_id'   => array(
+				'type'              => 'integer',
+				'required'          => false,
+				'default'           => 0,
+				'sanitize_callback' => 'absint',
+			),
+			'tags'          => array(
+				'type'              => 'string',
+				'required'          => false,
+				'default'           => '',
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'notes'         => array(
+				'type'              => 'string',
+				'required'          => false,
+				'default'           => '',
+				'sanitize_callback' => 'sanitize_textarea_field',
+			),
+		);
+	}
+
+	/**
+	 * @return array<string, array<string, mixed>>
+	 */
+	private function category_write_args(): array {
+		return array(
+			'name'        => array(
+				'type'              => 'string',
+				'required'          => false,
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'slug'        => array(
+				'type'              => 'string',
+				'required'          => false,
+				'sanitize_callback' => 'sanitize_title',
+			),
+			'description' => array(
+				'type'              => 'string',
+				'required'          => false,
+				'default'           => '',
+				'sanitize_callback' => 'sanitize_textarea_field',
+			),
+			'parent_id'   => array(
+				'type'              => 'integer',
+				'required'          => false,
+				'default'           => 0,
+				'sanitize_callback' => 'absint',
+			),
+		);
 	}
 }

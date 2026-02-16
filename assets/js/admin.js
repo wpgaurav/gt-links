@@ -20,19 +20,66 @@
 		var colCount = tr.children.length;
 		var quickTr = document.createElement('tr');
 		quickTr.className = 'gtlm-quick-edit-row inline-edit-row';
-		quickTr.innerHTML =
-			'<td colspan="' + colCount + '">' +
-			'<div class="gtlm-quick-edit-wrap">' +
-			'<label>Destination URL <input type="url" class="gtlm-quick-url" value="' + data.url.replace(/"/g, '&quot;') + '" /></label>' +
-			'<label>Type <select class="gtlm-quick-type"><option value="301">301</option><option value="302">302</option><option value="307">307</option></select></label>' +
-			'<button type="button" class="button button-primary gtlm-quick-save">Save</button> ' +
-			'<button type="button" class="button gtlm-quick-cancel">Cancel</button> ' +
-			'<span class="spinner" style="float:none;margin:0 0 0 8px;"></span>' +
-			'<span class="gtlm-quick-message" style="margin-left:10px;"></span>' +
-			'</div></td>';
+
+		var td = document.createElement('td');
+		td.setAttribute('colspan', colCount);
+
+		var wrap = document.createElement('div');
+		wrap.className = 'gtlm-quick-edit-wrap';
+
+		var urlLabel = document.createElement('label');
+		urlLabel.textContent = 'Destination URL ';
+		var urlInput = document.createElement('input');
+		urlInput.type = 'url';
+		urlInput.className = 'gtlm-quick-url';
+		urlInput.value = data.url;
+		urlLabel.appendChild(urlInput);
+
+		var typeLabel = document.createElement('label');
+		typeLabel.textContent = 'Type ';
+		var typeSelect = document.createElement('select');
+		typeSelect.className = 'gtlm-quick-type';
+		['301', '302', '307'].forEach(function (val) {
+			var opt = document.createElement('option');
+			opt.value = val;
+			opt.textContent = val;
+			typeSelect.appendChild(opt);
+		});
+		typeLabel.appendChild(typeSelect);
+
+		var saveBtn = document.createElement('button');
+		saveBtn.type = 'button';
+		saveBtn.className = 'button button-primary gtlm-quick-save';
+		saveBtn.textContent = 'Save';
+
+		var cancelBtn = document.createElement('button');
+		cancelBtn.type = 'button';
+		cancelBtn.className = 'button gtlm-quick-cancel';
+		cancelBtn.textContent = 'Cancel';
+
+		var spinner = document.createElement('span');
+		spinner.className = 'spinner';
+		spinner.style.cssText = 'float:none;margin:0 0 0 8px;';
+
+		var message = document.createElement('span');
+		message.className = 'gtlm-quick-message';
+		message.style.marginLeft = '10px';
+
+		wrap.appendChild(urlLabel);
+		wrap.appendChild(document.createTextNode(' '));
+		wrap.appendChild(typeLabel);
+		wrap.appendChild(document.createTextNode(' '));
+		wrap.appendChild(saveBtn);
+		wrap.appendChild(document.createTextNode(' '));
+		wrap.appendChild(cancelBtn);
+		wrap.appendChild(document.createTextNode(' '));
+		wrap.appendChild(spinner);
+		wrap.appendChild(message);
+		td.appendChild(wrap);
+		quickTr.appendChild(td);
 
 		tr.parentNode.insertBefore(quickTr, tr.nextSibling);
-		quickTr.querySelector('.gtlm-quick-type').value = String(data.redirectType);
+		typeSelect.value = String(data.redirectType);
 
 		quickTr.querySelector('.gtlm-quick-cancel').addEventListener('click', function () {
 			removeQuickEditor();

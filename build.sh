@@ -8,6 +8,14 @@ ZIP_NAME="${SLUG}-${VERSION}.zip"
 
 echo "Building ${SLUG} v${VERSION}..."
 
+# Compile block editor assets.
+for block_dir in blocks/*/; do
+	if [ -f "${block_dir}package.json" ]; then
+		echo "Compiling ${block_dir}..."
+		(cd "${block_dir}" && npm install --silent && npm run build)
+	fi
+done
+
 rm -rf "${BUILD_DIR}"
 mkdir -p "${BUILD_DIR}/${SLUG}"
 
