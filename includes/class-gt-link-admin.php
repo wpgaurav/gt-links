@@ -619,32 +619,41 @@ class GT_Link_Admin {
 		submit_button( __( 'Save Settings', 'gt-link-manager' ) );
 		echo '</form>';
 
-		echo '<form method="post" action="" style="margin-top:12px;">';
+		echo '<div class="gtlm-settings-actions">';
+
+		echo '<form method="post" action="" style="display:inline-block;">';
 		wp_nonce_field( 'gt_link_settings_save' );
 		echo '<input type="hidden" name="gt_settings_action" value="flush_permalinks" />';
-		submit_button( __( 'Flush Permalinks', 'gt-link-manager' ), 'secondary' );
+		echo '<button type="submit" class="button">' . esc_html__( 'Flush Permalinks', 'gt-link-manager' ) . '</button>';
 		echo '</form>';
 
-		echo '<form method="post" action="" style="margin-top:12px;">';
+		echo '<form method="post" action="" style="display:inline-block;">';
 		wp_nonce_field( 'gt_link_settings_save' );
 		echo '<input type="hidden" name="gt_settings_action" value="run_diagnostics" />';
-		submit_button( __( 'Run Diagnostics', 'gt-link-manager' ), 'secondary' );
+		echo '<button type="submit" class="button">' . esc_html__( 'Run Diagnostics', 'gt-link-manager' ) . '</button>';
 		echo '</form>';
+
+		echo '</div>';
 
 		echo '<h2>' . esc_html__( 'Diagnostics', 'gt-link-manager' ) . '</h2>';
 		if ( ! is_array( $diagnostics ) || empty( $diagnostics ) ) {
 			echo '<p>' . esc_html__( 'No diagnostics run yet.', 'gt-link-manager' ) . '</p>';
 		} else {
-			echo '<ul>';
-			echo '<li>' . esc_html__( 'Checked At:', 'gt-link-manager' ) . ' ' . esc_html( (string) ( $diagnostics['checked_at'] ?? '-' ) ) . '</li>';
-			echo '<li>' . esc_html__( 'Prefix:', 'gt-link-manager' ) . ' ' . esc_html( (string) ( $diagnostics['prefix'] ?? '-' ) ) . '</li>';
-			echo '<li>' . esc_html__( 'Tables:', 'gt-link-manager' ) . ' ' . esc_html( ! empty( $diagnostics['tables_ok'] ) ? __( 'OK', 'gt-link-manager' ) : __( 'Failed', 'gt-link-manager' ) ) . '</li>';
-			echo '<li>' . esc_html__( 'Rewrite Rule:', 'gt-link-manager' ) . ' ' . esc_html( ! empty( $diagnostics['rewrite_ok'] ) ? __( 'OK', 'gt-link-manager' ) : __( 'Missing', 'gt-link-manager' ) ) . '</li>';
 			$loopback = $diagnostics['loopback_ok'] ?? null;
 			$label    = is_bool( $loopback ) ? ( $loopback ? __( 'OK', 'gt-link-manager' ) : __( 'Failed', 'gt-link-manager' ) ) : __( 'Skipped', 'gt-link-manager' );
-			echo '<li>' . esc_html__( 'Runtime Redirect Test:', 'gt-link-manager' ) . ' ' . esc_html( $label ) . '</li>';
-			echo '<li>' . esc_html__( 'Details:', 'gt-link-manager' ) . ' ' . esc_html( (string) ( $diagnostics['message'] ?? '' ) ) . '</li>';
-			echo '</ul>';
+
+			echo '<div class="gtlm-diagnostics-card">';
+			echo '<table class="gtlm-diagnostics-table"><tbody>';
+			echo '<tr><th>' . esc_html__( 'Checked At', 'gt-link-manager' ) . '</th><td>' . esc_html( (string) ( $diagnostics['checked_at'] ?? '-' ) ) . '</td></tr>';
+			echo '<tr><th>' . esc_html__( 'Prefix', 'gt-link-manager' ) . '</th><td><code>' . esc_html( (string) ( $diagnostics['prefix'] ?? '-' ) ) . '</code></td></tr>';
+			echo '<tr><th>' . esc_html__( 'Tables', 'gt-link-manager' ) . '</th><td>' . ( ! empty( $diagnostics['tables_ok'] ) ? '<span class="gt-link-status gt-link-status--active">' . esc_html__( 'OK', 'gt-link-manager' ) . '</span>' : '<span class="gt-link-status gt-link-status--inactive">' . esc_html__( 'Failed', 'gt-link-manager' ) . '</span>' ) . '</td></tr>';
+			echo '<tr><th>' . esc_html__( 'Rewrite Rule', 'gt-link-manager' ) . '</th><td>' . ( ! empty( $diagnostics['rewrite_ok'] ) ? '<span class="gt-link-status gt-link-status--active">' . esc_html__( 'OK', 'gt-link-manager' ) . '</span>' : '<span class="gt-link-status gt-link-status--inactive">' . esc_html__( 'Missing', 'gt-link-manager' ) . '</span>' ) . '</td></tr>';
+			echo '<tr><th>' . esc_html__( 'Runtime Redirect', 'gt-link-manager' ) . '</th><td>' . ( true === $loopback ? '<span class="gt-link-status gt-link-status--active">' . esc_html( $label ) . '</span>' : '<span class="gt-link-status gt-link-status--inactive">' . esc_html( $label ) . '</span>' ) . '</td></tr>';
+			if ( ! empty( $diagnostics['message'] ) ) {
+				echo '<tr><th>' . esc_html__( 'Details', 'gt-link-manager' ) . '</th><td>' . esc_html( (string) $diagnostics['message'] ) . '</td></tr>';
+			}
+			echo '</tbody></table>';
+			echo '</div>';
 		}
 		echo '</div>';
 	}

@@ -273,17 +273,47 @@ body.gt-links_page_gt-links-import-export .tablenav.bottom {
 	max-width: 100%;
 }
 
-body.gt-links_page_gt-links-settings ul {
+/* Settings page: action buttons toolbar */
+.gtlm-settings-actions {
+	display: flex;
+	gap: 8px;
+	margin-top: 4px;
+	margin-bottom: 20px;
+}
+
+/* Settings page: diagnostics card */
+.gtlm-diagnostics-card {
 	background: var(--gtlm-card);
 	border: 1px solid var(--gtlm-border);
 	border-radius: var(--gtlm-radius);
-	padding: 12px 16px;
+	padding: 4px 16px;
 	margin-top: 8px;
+	max-width: 640px;
 }
 
-body.gt-links_page_gt-links-settings ul li {
-	padding: 5px 0;
-	color: #334e68;
+.gtlm-diagnostics-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.gtlm-diagnostics-table th {
+	text-align: left;
+	color: var(--gtlm-text);
+	font-weight: 600;
+	padding: 8px 12px 8px 0;
+	width: 160px;
+	border-bottom: 1px solid #f0f4f8;
+}
+
+.gtlm-diagnostics-table td {
+	color: var(--gtlm-muted);
+	padding: 8px 0;
+	border-bottom: 1px solid #f0f4f8;
+}
+
+.gtlm-diagnostics-table tr:last-child th,
+.gtlm-diagnostics-table tr:last-child td {
+	border-bottom: none;
 }
 
 .gtlm-license-card {

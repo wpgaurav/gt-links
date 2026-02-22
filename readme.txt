@@ -4,7 +4,7 @@ Tags: links, redirects, affiliate links, pretty links, marketing
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.2
-Stable tag: 1.1.9
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,12 @@ The plugin checks request URI early and loads the matching slug from a unique in
 5. Settings with diagnostics
 
 == Changelog ==
+
+= 1.2.0 =
+* Fixed critical bug: links disappeared after 1.1.9 update because new DB columns were not added on plugin update (only on fresh activation).
+* Added automatic DB migration that runs on update to add missing columns and backfill existing rows.
+* Fixed WordPress admin sidebar menu getting unintended card styles on the Settings page.
+* Improved Settings page: Flush Permalinks and Run Diagnostics buttons are now inline, diagnostics output uses a clean table layout with status badges.
 
 = 1.1.9 =
 * Added link activate/deactivate toggle. Inactive links stop redirecting but remain in the database.
@@ -141,6 +147,9 @@ The plugin checks request URI early and loads the matching slug from a unique in
 * LinkCentral-compatible CSV preset
 
 == Upgrade Notice ==
+
+= 1.2.0 =
+Critical fix: restores links that disappeared after 1.1.9 update. Adds automatic DB migration on update.
 
 = 1.1.9 =
 Links can now be activated/deactivated and deleted links go to trash first with restore support.

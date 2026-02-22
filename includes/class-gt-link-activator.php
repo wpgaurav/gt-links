@@ -78,6 +78,39 @@ class GT_Link_Activator {
 	}
 
 	/**
+	 * Check if schemas need updating and run migrations.
+	 *
+	 * Called on every admin_init so plugin updates that add columns
+	 * (like 1.1.9 adding is_active / trashed_at) take effect without
+	 * requiring a manual deactivate → reactivate cycle.
+	 */
+	public static function maybe_upgrade(): void {
+		$stored = get_option( 'gt_link_manager_db_version', '0' );
+
+		if ( version_compare( $stored, GT_LINK_MANAGER_VERSION, '>=' ) ) {
+			return;
+		}
+
+		// Re-run dbDelta to add any missing columns / indexes.
+		self::create_tables();
+
+		// Backfill: existing rows created before 1.1.9 have NULL is_active.
+		// They should be treated as active.
+		global $wpdb;
+		$table = GT_Link_DB::links_table();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$table} SET is_active = %d WHERE is_active IS NULL", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				1
+			)
+		);
+
+		update_option( 'gt_link_manager_db_version', GT_LINK_MANAGER_VERSION, true );
+	}
+
+	/**
 	 * Register rewrite rules at activation time.
 	 */
 	public static function register_rewrite_rules(): void {
