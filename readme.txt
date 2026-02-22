@@ -4,7 +4,7 @@ Tags: links, redirects, affiliate links, pretty links, marketing
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.2
-Stable tag: 1.1.7
+Stable tag: 1.1.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,18 @@ The plugin checks request URI early and loads the matching slug from a unique in
 5. Settings with diagnostics
 
 == Changelog ==
+
+= 1.1.9 =
+* Added link activate/deactivate toggle. Inactive links stop redirecting but remain in the database.
+* Delete now moves links to trash instead of permanent deletion. Links can be restored from trash.
+* Trash view with restore and permanent delete actions.
+* New bulk actions: Activate, Deactivate, Move to Trash, Restore, Delete Permanently.
+* REST API: DELETE defaults to trash (use `?force=true` for permanent). New `/restore` and `/toggle-active` endpoints.
+* Status column and views (All / Active / Inactive / Trash) in the links list table.
+* New `is_active` and `trashed_at` columns added to the links table on upgrade.
+
+= 1.1.8 =
+* Maintenance release.
 
 = 1.1.7 =
 * Block editor: Fixed editor scroll jump when opening GT Link popover from the toolbar.
@@ -129,6 +141,9 @@ The plugin checks request URI early and loads the matching slug from a unique in
 * LinkCentral-compatible CSV preset
 
 == Upgrade Notice ==
+
+= 1.1.9 =
+Links can now be activated/deactivated and deleted links go to trash first with restore support.
 
 = 1.1.7 =
 Fixes editor scroll jump when opening GT Link popover from the toolbar.

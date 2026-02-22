@@ -46,15 +46,19 @@ class GT_Link_Activator {
 			redirect_type SMALLINT(3) NOT NULL DEFAULT 301,
 			rel VARCHAR(100) DEFAULT '',
 			noindex TINYINT(1) NOT NULL DEFAULT 0,
+			is_active TINYINT(1) NOT NULL DEFAULT 1,
 			category_id BIGINT(20) UNSIGNED DEFAULT NULL,
 			tags VARCHAR(255) DEFAULT '',
 			notes TEXT,
+			trashed_at DATETIME DEFAULT NULL,
 			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 			PRIMARY KEY  (id),
 			UNIQUE KEY slug (slug),
 			KEY category_id (category_id),
-			KEY redirect_type (redirect_type)
+			KEY redirect_type (redirect_type),
+			KEY is_active (is_active),
+			KEY trashed_at (trashed_at)
 		) {$charset_collate};";
 
 		$sql_cats = "CREATE TABLE {$cats_table} (

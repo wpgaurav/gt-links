@@ -13,6 +13,11 @@ class GT_Link_DB {
 	public const CACHE_GROUP = 'gt_links';
 
 	/**
+	 * Column list used in SELECT statements.
+	 */
+	private const LINK_COLUMNS = 'id, name, slug, url, redirect_type, rel, noindex, is_active, category_id, tags, notes, trashed_at, created_at, updated_at';
+
+	/**
 	 * @return string
 	 */
 	public static function links_table(): string {
@@ -49,7 +54,7 @@ class GT_Link_DB {
 		global $wpdb;
 
 		$sql = $wpdb->prepare(
-			'SELECT id, name, slug, url, redirect_type, rel, noindex, category_id, tags, notes, created_at, updated_at FROM ' . self::links_table() . ' WHERE slug = %s LIMIT 1',
+			'SELECT ' . self::LINK_COLUMNS . ' FROM ' . self::links_table() . ' WHERE slug = %s LIMIT 1',
 			$slug
 		);
 
@@ -69,7 +74,7 @@ class GT_Link_DB {
 		global $wpdb;
 
 		$insert = $this->normalize_link_for_write( $data );
-		$format = array( '%s', '%s', '%s', '%d', '%s', '%d', '%d', '%s', '%s' );
+		$format = array( '%s', '%s', '%s', '%d', '%s', '%d', '%d', '%d', '%s', '%s' );
 
 		$result = $wpdb->insert( self::links_table(), $insert, $format );
 		if ( false === $result ) {
@@ -103,7 +108,7 @@ class GT_Link_DB {
 		global $wpdb;
 
 		$update = $this->normalize_link_for_write( $data );
-		$format = array( '%s', '%s', '%s', '%d', '%s', '%d', '%d', '%s', '%s' );
+		$format = array( '%s', '%s', '%s', '%d', '%s', '%d', '%d', '%d', '%s', '%s' );
 
 		$result = $wpdb->update(
 			self::links_table(),
@@ -132,7 +137,65 @@ class GT_Link_DB {
 	}
 
 	/**
-	 * Delete a link by ID.
+	 * Soft-delete: move a link to trash.
+	 */
+	public function trash_link( int $id ): bool {
+		if ( $id <= 0 ) {
+			return false;
+		}
+
+		$link = $this->get_link_by_id( $id );
+		if ( null === $link ) {
+			return false;
+		}
+
+		global $wpdb;
+		$result = $wpdb->update(
+			self::links_table(),
+			array( 'trashed_at' => current_time( 'mysql' ) ),
+			array( 'id' => $id ),
+			array( '%s' ),
+			array( '%d' )
+		);
+
+		if ( false === $result ) {
+			return false;
+		}
+
+		$this->delete_slug_cache( (string) $link['slug'] );
+		return true;
+	}
+
+	/**
+	 * Restore a link from trash.
+	 */
+	public function restore_link( int $id ): bool {
+		if ( $id <= 0 ) {
+			return false;
+		}
+
+		global $wpdb;
+		$result = $wpdb->query(
+			$wpdb->prepare(
+				'UPDATE ' . self::links_table() . ' SET trashed_at = NULL WHERE id = %d',
+				$id
+			)
+		);
+
+		if ( false === $result ) {
+			return false;
+		}
+
+		$link = $this->get_link_by_id( $id );
+		if ( is_array( $link ) ) {
+			$this->delete_slug_cache( (string) $link['slug'] );
+		}
+
+		return true;
+	}
+
+	/**
+	 * Permanently delete a link by ID.
 	 */
 	public function delete_link( int $id ): bool {
 		if ( $id <= 0 ) {
@@ -159,6 +222,36 @@ class GT_Link_DB {
 	}
 
 	/**
+	 * Toggle is_active status for a link.
+	 */
+	public function toggle_active( int $id, bool $active ): bool {
+		if ( $id <= 0 ) {
+			return false;
+		}
+
+		$link = $this->get_link_by_id( $id );
+		if ( null === $link ) {
+			return false;
+		}
+
+		global $wpdb;
+		$result = $wpdb->update(
+			self::links_table(),
+			array( 'is_active' => $active ? 1 : 0 ),
+			array( 'id' => $id ),
+			array( '%d' ),
+			array( '%d' )
+		);
+
+		if ( false === $result ) {
+			return false;
+		}
+
+		$this->delete_slug_cache( (string) $link['slug'] );
+		return true;
+	}
+
+	/**
 	 * @return array<string, mixed>|null
 	 */
 	public function get_link_by_id( int $id ): ?array {
@@ -168,7 +261,7 @@ class GT_Link_DB {
 
 		global $wpdb;
 		$sql = $wpdb->prepare(
-			'SELECT id, name, slug, url, redirect_type, rel, noindex, category_id, tags, notes, created_at, updated_at FROM ' . self::links_table() . ' WHERE id = %d LIMIT 1',
+			'SELECT ' . self::LINK_COLUMNS . ' FROM ' . self::links_table() . ' WHERE id = %d LIMIT 1',
 			$id
 		);
 
@@ -185,6 +278,7 @@ class GT_Link_DB {
 
 	/**
 	 * Lightweight search for editor inserter.
+	 * Excludes trashed and inactive links.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
@@ -192,13 +286,13 @@ class GT_Link_DB {
 		global $wpdb;
 
 		$limit = max( 1, min( 100, $limit ) );
-		$sql   = 'SELECT id, name, slug, rel FROM ' . self::links_table();
+		$sql   = 'SELECT id, name, slug, rel FROM ' . self::links_table() . ' WHERE trashed_at IS NULL AND is_active = 1';
 		$args  = array();
 
 		$search = sanitize_text_field( $search );
 		if ( '' !== $search ) {
 			$like = '%' . $wpdb->esc_like( $search ) . '%';
-			$sql .= ' WHERE name LIKE %s OR slug LIKE %s';
+			$sql .= ' AND (name LIKE %s OR slug LIKE %s)';
 			$args[] = $like;
 			$args[] = $like;
 		}
@@ -226,7 +320,9 @@ class GT_Link_DB {
 	}
 
 	/**
-	 * Count all links.
+	 * Count links with filters.
+	 *
+	 * Supported filters: search, category_id, redirect_type, rel, status (active|inactive|all), trashed (bool).
 	 */
 	public function count_links( array $filters = array() ): int {
 		global $wpdb;
@@ -234,31 +330,8 @@ class GT_Link_DB {
 		$sql    = 'SELECT COUNT(*) FROM ' . self::links_table() . ' WHERE 1=1';
 		$params = array();
 
-		if ( ! empty( $filters['search'] ) ) {
-			$search = '%' . $wpdb->esc_like( sanitize_text_field( (string) $filters['search'] ) ) . '%';
-			$sql   .= ' AND (name LIKE %s OR slug LIKE %s OR url LIKE %s)';
-			$params[] = $search;
-			$params[] = $search;
-			$params[] = $search;
-		}
-
-		if ( ! empty( $filters['category_id'] ) ) {
-			$sql .= ' AND category_id = %d';
-			$params[] = absint( $filters['category_id'] );
-		}
-
-		if ( ! empty( $filters['redirect_type'] ) ) {
-			$sql .= ' AND redirect_type = %d';
-			$params[] = (int) $filters['redirect_type'];
-		}
-
-		if ( ! empty( $filters['rel'] ) ) {
-			$rel_value = sanitize_key( (string) $filters['rel'] );
-			if ( in_array( $rel_value, array( 'nofollow', 'sponsored', 'ugc' ), true ) ) {
-				$sql     .= ' AND FIND_IN_SET(%s, rel)';
-				$params[] = $rel_value;
-			}
-		}
+		$this->apply_status_filters( $sql, $params, $filters );
+		$this->apply_common_filters( $sql, $params, $filters );
 
 		if ( ! empty( $params ) ) {
 			$sql = $wpdb->prepare( $sql, $params );
@@ -281,41 +354,18 @@ class GT_Link_DB {
 	): array {
 		global $wpdb;
 
-		$allowed_orderby = array( 'id', 'name', 'slug', 'url', 'redirect_type', 'rel', 'category_id', 'created_at', 'updated_at' );
+		$allowed_orderby = array( 'id', 'name', 'slug', 'url', 'redirect_type', 'rel', 'category_id', 'is_active', 'created_at', 'updated_at' );
 		$orderby         = in_array( $orderby, $allowed_orderby, true ) ? $orderby : 'id';
 		$order           = 'ASC' === strtoupper( $order ) ? 'ASC' : 'DESC';
 		$page            = max( 1, $page );
 		$per_page        = max( 1, $per_page );
 		$offset          = ( $page - 1 ) * $per_page;
 
-		$sql    = 'SELECT id, name, slug, url, redirect_type, rel, noindex, category_id, tags, notes, created_at, updated_at FROM ' . self::links_table() . ' WHERE 1=1';
+		$sql    = 'SELECT ' . self::LINK_COLUMNS . ' FROM ' . self::links_table() . ' WHERE 1=1';
 		$params = array();
 
-		if ( ! empty( $filters['search'] ) ) {
-			$search = '%' . $wpdb->esc_like( sanitize_text_field( (string) $filters['search'] ) ) . '%';
-			$sql   .= ' AND (name LIKE %s OR slug LIKE %s OR url LIKE %s)';
-			$params[] = $search;
-			$params[] = $search;
-			$params[] = $search;
-		}
-
-		if ( ! empty( $filters['category_id'] ) ) {
-			$sql .= ' AND category_id = %d';
-			$params[] = absint( $filters['category_id'] );
-		}
-
-		if ( ! empty( $filters['redirect_type'] ) ) {
-			$sql .= ' AND redirect_type = %d';
-			$params[] = (int) $filters['redirect_type'];
-		}
-
-		if ( ! empty( $filters['rel'] ) ) {
-			$rel_value = sanitize_key( (string) $filters['rel'] );
-			if ( in_array( $rel_value, array( 'nofollow', 'sponsored', 'ugc' ), true ) ) {
-				$sql     .= ' AND FIND_IN_SET(%s, rel)';
-				$params[] = $rel_value;
-			}
-		}
+		$this->apply_status_filters( $sql, $params, $filters );
+		$this->apply_common_filters( $sql, $params, $filters );
 
 		$sql .= " ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d";
 		$params[] = $per_page;
@@ -332,15 +382,64 @@ class GT_Link_DB {
 	}
 
 	/**
-	 * List all links for CSV export.
+	 * List all links for CSV export (excludes trashed).
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
 	public function list_links_for_export( array $filters = array() ): array {
 		global $wpdb;
 
-		$sql    = 'SELECT id, name, slug, url, redirect_type, rel, noindex, category_id, tags, notes, created_at, updated_at FROM ' . self::links_table() . ' WHERE 1=1';
+		$sql    = 'SELECT ' . self::LINK_COLUMNS . ' FROM ' . self::links_table() . ' WHERE trashed_at IS NULL';
 		$params = array();
+
+		$this->apply_common_filters( $sql, $params, $filters );
+
+		$sql .= ' ORDER BY id DESC';
+		if ( ! empty( $params ) ) {
+			$sql = $wpdb->prepare( $sql, $params );
+		}
+
+		$rows = $wpdb->get_results( $sql, ARRAY_A );
+		if ( ! is_array( $rows ) ) {
+			return array();
+		}
+
+		return array_map( array( $this, 'normalize_link_row' ), $rows );
+	}
+
+	/**
+	 * Apply trash/status WHERE clauses.
+	 *
+	 * @param string              $sql    SQL string (modified by reference).
+	 * @param array<int, mixed>   $params Params array (modified by reference).
+	 * @param array<string,mixed> $filters Filters.
+	 */
+	private function apply_status_filters( string &$sql, array &$params, array $filters ): void {
+		$trashed = ! empty( $filters['trashed'] );
+
+		if ( $trashed ) {
+			$sql .= ' AND trashed_at IS NOT NULL';
+		} else {
+			$sql .= ' AND trashed_at IS NULL';
+		}
+
+		$status = (string) ( $filters['status'] ?? '' );
+		if ( 'active' === $status ) {
+			$sql .= ' AND is_active = 1';
+		} elseif ( 'inactive' === $status ) {
+			$sql .= ' AND is_active = 0';
+		}
+	}
+
+	/**
+	 * Apply common WHERE clauses (search, category, redirect_type, rel).
+	 *
+	 * @param string              $sql
+	 * @param array<int, mixed>   $params
+	 * @param array<string,mixed> $filters
+	 */
+	private function apply_common_filters( string &$sql, array &$params, array $filters ): void {
+		global $wpdb;
 
 		if ( ! empty( $filters['search'] ) ) {
 			$search = '%' . $wpdb->esc_like( sanitize_text_field( (string) $filters['search'] ) ) . '%';
@@ -367,18 +466,6 @@ class GT_Link_DB {
 				$params[] = $rel_value;
 			}
 		}
-
-		$sql .= ' ORDER BY id DESC';
-		if ( ! empty( $params ) ) {
-			$sql = $wpdb->prepare( $sql, $params );
-		}
-
-		$rows = $wpdb->get_results( $sql, ARRAY_A );
-		if ( ! is_array( $rows ) ) {
-			return array();
-		}
-
-		return array_map( array( $this, 'normalize_link_row' ), $rows );
 	}
 
 	/**
@@ -543,10 +630,12 @@ class GT_Link_DB {
 		$row['id']            = (int) $row['id'];
 		$row['redirect_type'] = (int) $row['redirect_type'];
 		$row['noindex']       = (int) $row['noindex'];
+		$row['is_active']     = (int) ( $row['is_active'] ?? 1 );
 		$row['category_id']   = isset( $row['category_id'] ) ? (int) $row['category_id'] : 0;
 		$row['slug']          = $this->sanitize_slug( (string) $row['slug'] );
 		$row['rel']           = $this->sanitize_rel_string( (string) $row['rel'] );
 		$row['url']           = esc_url_raw( (string) $row['url'] );
+		$row['trashed_at']    = isset( $row['trashed_at'] ) ? (string) $row['trashed_at'] : null;
 
 		return $row;
 	}
@@ -565,6 +654,7 @@ class GT_Link_DB {
 			'redirect_type' => $this->sanitize_redirect_type( (int) ( $data['redirect_type'] ?? 301 ) ),
 			'rel'           => $rel,
 			'noindex'       => ! empty( $data['noindex'] ) ? 1 : 0,
+			'is_active'     => isset( $data['is_active'] ) ? ( ! empty( $data['is_active'] ) ? 1 : 0 ) : 1,
 			'category_id'   => absint( $data['category_id'] ?? 0 ),
 			'tags'          => sanitize_text_field( (string) ( $data['tags'] ?? '' ) ),
 			'notes'         => sanitize_textarea_field( (string) ( $data['notes'] ?? '' ) ),

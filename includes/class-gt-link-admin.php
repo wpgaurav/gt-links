@@ -195,7 +195,7 @@ class GT_Link_Admin {
 		}
 
 		if ( 'gt-links' === $page ) {
-			$this->handle_link_delete_action();
+			$this->handle_link_actions();
 		}
 
 		if ( 'gt-links-edit' === $page ) {
@@ -211,7 +211,7 @@ class GT_Link_Admin {
 		}
 	}
 
-	private function handle_link_delete_action(): void {
+	private function handle_link_actions(): void {
 		if ( ! isset( $_GET['action'], $_GET['link'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			return;
 		}
@@ -219,14 +219,45 @@ class GT_Link_Admin {
 		$action  = sanitize_key( (string) wp_unslash( $_GET['action'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$link_id = absint( $_GET['link'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
-		if ( 'delete' !== $action || $link_id <= 0 ) {
+		if ( $link_id <= 0 ) {
 			return;
 		}
 
-		check_admin_referer( 'gt_link_delete_' . $link_id );
-		$deleted = $this->db->delete_link( $link_id );
+		$allowed = array( 'trash', 'restore', 'permanent_delete', 'activate', 'deactivate' );
+		if ( ! in_array( $action, $allowed, true ) ) {
+			return;
+		}
 
-		$this->redirect_with_notice( admin_url( 'admin.php?page=gt-links' ), $deleted ? 'deleted' : 'delete_failed' );
+		check_admin_referer( 'gt_link_' . $action . '_' . $link_id );
+
+		$redirect_url = admin_url( 'admin.php?page=gt-links' );
+
+		switch ( $action ) {
+			case 'trash':
+				$ok = $this->db->trash_link( $link_id );
+				$this->redirect_with_notice( $redirect_url, $ok ? 'trashed' : 'trash_failed' );
+				break;
+
+			case 'restore':
+				$ok = $this->db->restore_link( $link_id );
+				$this->redirect_with_notice( add_query_arg( 'link_status', 'trash', $redirect_url ), $ok ? 'restored' : 'restore_failed' );
+				break;
+
+			case 'permanent_delete':
+				$ok = $this->db->delete_link( $link_id );
+				$this->redirect_with_notice( add_query_arg( 'link_status', 'trash', $redirect_url ), $ok ? 'deleted' : 'delete_failed' );
+				break;
+
+			case 'activate':
+				$ok = $this->db->toggle_active( $link_id, true );
+				$this->redirect_with_notice( $redirect_url, $ok ? 'activated' : 'activate_failed' );
+				break;
+
+			case 'deactivate':
+				$ok = $this->db->toggle_active( $link_id, false );
+				$this->redirect_with_notice( $redirect_url, $ok ? 'deactivated' : 'deactivate_failed' );
+				break;
+		}
 	}
 
 	private function handle_link_save_action(): void {
@@ -262,7 +293,16 @@ class GT_Link_Admin {
 		}
 
 		$link_id = absint( $_POST['link_id'] ?? 0 );
-		$ok      = $link_id > 0 ? $this->db->update_link( $link_id, $data ) : ( $this->db->insert_link( $data ) > 0 );
+
+		// Preserve is_active from existing link when editing (not in form).
+		if ( $link_id > 0 ) {
+			$existing = $this->db->get_link_by_id( $link_id );
+			if ( is_array( $existing ) ) {
+				$data['is_active'] = (int) ( $existing['is_active'] ?? 1 );
+			}
+		}
+
+		$ok = $link_id > 0 ? $this->db->update_link( $link_id, $data ) : ( $this->db->insert_link( $data ) > 0 );
 		if ( $link_id <= 0 && $ok ) {
 			$created = $this->db->get_link_by_slug( $data['slug'] );
 			$link_id = is_array( $created ) ? (int) $created['id'] : 0;
@@ -428,8 +468,14 @@ class GT_Link_Admin {
 
 		require_once GT_LINK_MANAGER_PATH . 'includes/class-gt-link-list-table.php';
 
+		$view       = isset( $_GET['link_status'] ) ? sanitize_key( (string) wp_unslash( $_GET['link_status'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$valid_views = array( 'active', 'inactive', 'trash' );
+		if ( ! in_array( $view, $valid_views, true ) ) {
+			$view = '';
+		}
+
 		$categories = $this->db->get_categories();
-		$table      = new GT_Link_List_Table( $this->db, $categories, $this->settings->prefix() );
+		$table      = new GT_Link_List_Table( $this->db, $categories, $this->settings->prefix(), $view );
 		$table->prepare_items();
 
 		echo '<div class="wrap">';
@@ -438,6 +484,9 @@ class GT_Link_Admin {
 		$this->render_notice();
 		echo '<form method="get">';
 		echo '<input type="hidden" name="page" value="gt-links" />';
+		if ( '' !== $view ) {
+			echo '<input type="hidden" name="link_status" value="' . esc_attr( $view ) . '" />';
+		}
 		$table->search_box( esc_html__( 'Search links', 'gt-link-manager' ), 'gt-links-search' );
 		$table->display();
 		echo '</form>';
@@ -617,7 +666,11 @@ class GT_Link_Admin {
 		$notice = sanitize_key( (string) wp_unslash( $_GET['gtlm_notice'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$map    = array(
 			'saved'                  => array( 'success', __( 'Saved successfully.', 'gt-link-manager' ) ),
-			'deleted'                => array( 'success', __( 'Deleted successfully.', 'gt-link-manager' ) ),
+			'deleted'                => array( 'success', __( 'Deleted permanently.', 'gt-link-manager' ) ),
+			'trashed'                => array( 'success', __( 'Link moved to trash.', 'gt-link-manager' ) ),
+			'restored'               => array( 'success', __( 'Link restored from trash.', 'gt-link-manager' ) ),
+			'activated'              => array( 'success', __( 'Link activated.', 'gt-link-manager' ) ),
+			'deactivated'            => array( 'success', __( 'Link deactivated.', 'gt-link-manager' ) ),
 			'category_saved'         => array( 'success', __( 'Category saved.', 'gt-link-manager' ) ),
 			'category_deleted'       => array( 'success', __( 'Category deleted.', 'gt-link-manager' ) ),
 			'settings_saved'         => array( 'success', __( 'Settings updated.', 'gt-link-manager' ) ),
@@ -627,6 +680,10 @@ class GT_Link_Admin {
 			'invalid_category'       => array( 'error', __( 'Category name is required.', 'gt-link-manager' ) ),
 			'save_failed'            => array( 'error', __( 'Save failed. Please check values.', 'gt-link-manager' ) ),
 			'delete_failed'          => array( 'error', __( 'Delete failed.', 'gt-link-manager' ) ),
+			'trash_failed'           => array( 'error', __( 'Could not move to trash.', 'gt-link-manager' ) ),
+			'restore_failed'         => array( 'error', __( 'Could not restore link.', 'gt-link-manager' ) ),
+			'activate_failed'        => array( 'error', __( 'Could not activate link.', 'gt-link-manager' ) ),
+			'deactivate_failed'      => array( 'error', __( 'Could not deactivate link.', 'gt-link-manager' ) ),
 			'category_save_failed'   => array( 'error', __( 'Category save failed.', 'gt-link-manager' ) ),
 			'category_delete_failed' => array( 'error', __( 'Category delete failed.', 'gt-link-manager' ) ),
 			'settings_unchanged'     => array( 'warning', __( 'No settings changed.', 'gt-link-manager' ) ),

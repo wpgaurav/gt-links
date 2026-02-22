@@ -65,6 +65,11 @@ class GT_Link_Redirect {
 			return;
 		}
 
+		// Skip trashed or inactive links.
+		if ( ! empty( $link['trashed_at'] ) || empty( $link['is_active'] ) ) {
+			return;
+		}
+
 		$target_url = (string) apply_filters( 'gt_link_manager_redirect_url', $link['url'], $link, $slug );
 		$status     = (int) apply_filters( 'gt_link_manager_redirect_code', (int) $link['redirect_type'], $link, $slug );
 		$status     = in_array( $status, array( 301, 302, 307 ), true ) ? $status : 301;

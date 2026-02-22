@@ -68,6 +68,13 @@ class GT_Link_REST_API {
 							'default'           => 0,
 							'sanitize_callback' => 'absint',
 						),
+						'status'        => array(
+							'type'              => 'string',
+							'required'          => false,
+							'default'           => '',
+							'enum'              => array( '', 'active', 'inactive', 'trash' ),
+							'sanitize_callback' => 'sanitize_key',
+						),
 						'orderby'       => array(
 							'type'              => 'string',
 							'required'          => false,
@@ -112,6 +119,38 @@ class GT_Link_REST_API {
 					'methods'             => WP_REST_Server::DELETABLE,
 					'callback'            => array( $this, 'delete_link' ),
 					'permission_callback' => array( $this, 'permissions_check' ),
+					'args'                => array(
+						'force' => array(
+							'type'    => 'boolean',
+							'default' => false,
+						),
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			'gt-link-manager/v1',
+			'/links/(?P<id>\d+)/restore',
+			array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'restore_link' ),
+				'permission_callback' => array( $this, 'permissions_check' ),
+			)
+		);
+
+		register_rest_route(
+			'gt-link-manager/v1',
+			'/links/(?P<id>\d+)/toggle-active',
+			array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'toggle_link_active' ),
+				'permission_callback' => array( $this, 'permissions_check' ),
+				'args'                => array(
+					'is_active' => array(
+						'type'     => 'boolean',
+						'required' => true,
+					),
 				),
 			)
 		);
@@ -213,6 +252,13 @@ class GT_Link_REST_API {
 			$filters['category_id'] = $category_id;
 		}
 
+		$status = (string) $request->get_param( 'status' );
+		if ( 'trash' === $status ) {
+			$filters['trashed'] = true;
+		} elseif ( in_array( $status, array( 'active', 'inactive' ), true ) ) {
+			$filters['status'] = $status;
+		}
+
 		$total = $this->db->count_links( $filters );
 
 		if ( -1 === $per_page ) {
@@ -237,9 +283,11 @@ class GT_Link_REST_API {
 					'redirect_type' => (int) $row['redirect_type'],
 					'rel'           => (string) $row['rel'],
 					'noindex'       => (int) $row['noindex'],
+					'is_active'     => (int) ( $row['is_active'] ?? 1 ),
 					'category_id'   => (int) $row['category_id'],
 					'tags'          => (string) ( $row['tags'] ?? '' ),
 					'notes'         => (string) ( $row['notes'] ?? '' ),
+					'trashed_at'    => $row['trashed_at'] ?? null,
 					'created_at'    => (string) ( $row['created_at'] ?? '' ),
 					'updated_at'    => (string) ( $row['updated_at'] ?? '' ),
 				);
@@ -325,17 +373,67 @@ class GT_Link_REST_API {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function delete_link( WP_REST_Request $request ) {
+		$id    = absint( $request['id'] );
+		$force = ! empty( $request->get_param( 'force' ) );
+
+		if ( $id <= 0 ) {
+			return new WP_Error( 'gt_link_invalid_id', __( 'Invalid link ID.', 'gt-link-manager' ), array( 'status' => 400 ) );
+		}
+
+		if ( $force ) {
+			$ok = $this->db->delete_link( $id );
+			if ( ! $ok ) {
+				return new WP_Error( 'gt_link_delete_failed', __( 'Could not delete link.', 'gt-link-manager' ), array( 'status' => 500 ) );
+			}
+			return rest_ensure_response( array( 'deleted' => true, 'id' => $id ) );
+		}
+
+		$ok = $this->db->trash_link( $id );
+		if ( ! $ok ) {
+			return new WP_Error( 'gt_link_trash_failed', __( 'Could not trash link.', 'gt-link-manager' ), array( 'status' => 500 ) );
+		}
+
+		return rest_ensure_response( array( 'trashed' => true, 'id' => $id ) );
+	}
+
+	/**
+	 * Restore a link from trash.
+	 *
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function restore_link( WP_REST_Request $request ) {
 		$id = absint( $request['id'] );
 		if ( $id <= 0 ) {
 			return new WP_Error( 'gt_link_invalid_id', __( 'Invalid link ID.', 'gt-link-manager' ), array( 'status' => 400 ) );
 		}
 
-		$ok = $this->db->delete_link( $id );
+		$ok = $this->db->restore_link( $id );
 		if ( ! $ok ) {
-			return new WP_Error( 'gt_link_delete_failed', __( 'Could not delete link.', 'gt-link-manager' ), array( 'status' => 500 ) );
+			return new WP_Error( 'gt_link_restore_failed', __( 'Could not restore link.', 'gt-link-manager' ), array( 'status' => 500 ) );
 		}
 
-		return rest_ensure_response( array( 'deleted' => true, 'id' => $id ) );
+		return rest_ensure_response( $this->db->get_link_by_id( $id ) );
+	}
+
+	/**
+	 * Toggle link active status.
+	 *
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function toggle_link_active( WP_REST_Request $request ) {
+		$id        = absint( $request['id'] );
+		$is_active = ! empty( $request->get_param( 'is_active' ) );
+
+		if ( $id <= 0 ) {
+			return new WP_Error( 'gt_link_invalid_id', __( 'Invalid link ID.', 'gt-link-manager' ), array( 'status' => 400 ) );
+		}
+
+		$ok = $this->db->toggle_active( $id, $is_active );
+		if ( ! $ok ) {
+			return new WP_Error( 'gt_link_toggle_failed', __( 'Could not update link status.', 'gt-link-manager' ), array( 'status' => 500 ) );
+		}
+
+		return rest_ensure_response( $this->db->get_link_by_id( $id ) );
 	}
 
 	/**
@@ -547,6 +645,11 @@ class GT_Link_REST_API {
 			$notes = (string) $fallback['notes'];
 		}
 
+		$is_active = $request->get_param( 'is_active' );
+		if ( null === $is_active && isset( $fallback['is_active'] ) ) {
+			$is_active = (int) $fallback['is_active'];
+		}
+
 		$redirect_type = (int) $redirect_type;
 		if ( ! in_array( $redirect_type, array( 301, 302, 307 ), true ) ) {
 			$redirect_type = 301;
@@ -561,6 +664,7 @@ class GT_Link_REST_API {
 			'redirect_type' => $redirect_type,
 			'rel'           => implode( ',', $rel_values ),
 			'noindex'       => ! empty( $noindex ) ? 1 : 0,
+			'is_active'     => null !== $is_active ? ( ! empty( $is_active ) ? 1 : 0 ) : 1,
 			'category_id'   => absint( $category_id ),
 			'tags'          => sanitize_text_field( (string) $tags ),
 			'notes'         => sanitize_textarea_field( (string) $notes ),
@@ -683,6 +787,12 @@ class GT_Link_REST_API {
 				'required'          => false,
 				'default'           => '',
 				'sanitize_callback' => 'sanitize_textarea_field',
+			),
+			'is_active'     => array(
+				'type'              => 'integer',
+				'required'          => false,
+				'default'           => 1,
+				'enum'              => array( 0, 1 ),
 			),
 		);
 	}

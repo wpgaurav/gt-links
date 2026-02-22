@@ -24,12 +24,18 @@ class GT_Link_List_Table extends WP_List_Table {
 	private array $categories;
 
 	/**
+	 * Current view context: '' (all non-trashed), 'active', 'inactive', 'trash'.
+	 */
+	private string $view;
+
+	/**
 	 * @param array<int, array<string, mixed>> $categories Categories.
 	 */
-	public function __construct( GT_Link_DB $db, array $categories, string $prefix ) {
+	public function __construct( GT_Link_DB $db, array $categories, string $prefix, string $view = '' ) {
 		$this->db         = $db;
 		$this->categories = $categories;
 		$this->prefix     = sanitize_title_with_dashes( $prefix );
+		$this->view       = $view;
 
 		parent::__construct(
 			array(
@@ -52,6 +58,7 @@ class GT_Link_List_Table extends WP_List_Table {
 			'url'           => esc_html__( 'Destination', 'gt-link-manager' ),
 			'redirect_type' => esc_html__( 'Type', 'gt-link-manager' ),
 			'rel'           => esc_html__( 'Rel', 'gt-link-manager' ),
+			'status'        => esc_html__( 'Status', 'gt-link-manager' ),
 			'category'      => esc_html__( 'Category', 'gt-link-manager' ),
 			'created_at'    => esc_html__( 'Created', 'gt-link-manager' ),
 		);
@@ -70,6 +77,7 @@ class GT_Link_List_Table extends WP_List_Table {
 			'url'           => array( 'url', false ),
 			'redirect_type' => array( 'redirect_type', false ),
 			'rel'           => array( 'rel', false ),
+			'status'        => array( 'is_active', false ),
 			'category'      => array( 'category_id', false ),
 			'created_at'    => array( 'created_at', false ),
 		);
@@ -79,8 +87,17 @@ class GT_Link_List_Table extends WP_List_Table {
 	 * @return array<string, string>
 	 */
 	protected function get_bulk_actions(): array {
+		if ( 'trash' === $this->view ) {
+			return array(
+				'bulk_restore'          => esc_html__( 'Restore', 'gt-link-manager' ),
+				'bulk_permanent_delete' => esc_html__( 'Delete Permanently', 'gt-link-manager' ),
+			);
+		}
+
 		return array(
-			'bulk_delete'        => esc_html__( 'Delete', 'gt-link-manager' ),
+			'bulk_trash'         => esc_html__( 'Move to Trash', 'gt-link-manager' ),
+			'bulk_activate'      => esc_html__( 'Activate', 'gt-link-manager' ),
+			'bulk_deactivate'    => esc_html__( 'Deactivate', 'gt-link-manager' ),
 			'bulk_301'           => esc_html__( 'Set 301', 'gt-link-manager' ),
 			'bulk_302'           => esc_html__( 'Set 302', 'gt-link-manager' ),
 			'bulk_307'           => esc_html__( 'Set 307', 'gt-link-manager' ),
@@ -92,8 +109,57 @@ class GT_Link_List_Table extends WP_List_Table {
 		);
 	}
 
+	/**
+	 * Render view links (All | Active | Inactive | Trash).
+	 *
+	 * @return array<string, string>
+	 */
+	protected function get_views(): array {
+		$base_url  = admin_url( 'admin.php?page=gt-links' );
+		$all       = $this->db->count_links( array() );
+		$active    = $this->db->count_links( array( 'status' => 'active' ) );
+		$inactive  = $this->db->count_links( array( 'status' => 'inactive' ) );
+		$trash     = $this->db->count_links( array( 'trashed' => true ) );
+
+		$views = array();
+
+		$class = '' === $this->view ? 'current' : '';
+		$views['all'] = '<a href="' . esc_url( $base_url ) . '" class="' . $class . '">' . sprintf(
+			/* translators: %s: number of links */
+			esc_html__( 'All %s', 'gt-link-manager' ),
+			'<span class="count">(' . $all . ')</span>'
+		) . '</a>';
+
+		$class = 'active' === $this->view ? 'current' : '';
+		$views['active'] = '<a href="' . esc_url( add_query_arg( 'link_status', 'active', $base_url ) ) . '" class="' . $class . '">' . sprintf(
+			/* translators: %s: number of links */
+			esc_html__( 'Active %s', 'gt-link-manager' ),
+			'<span class="count">(' . $active . ')</span>'
+		) . '</a>';
+
+		$class = 'inactive' === $this->view ? 'current' : '';
+		$views['inactive'] = '<a href="' . esc_url( add_query_arg( 'link_status', 'inactive', $base_url ) ) . '" class="' . $class . '">' . sprintf(
+			/* translators: %s: number of links */
+			esc_html__( 'Inactive %s', 'gt-link-manager' ),
+			'<span class="count">(' . $inactive . ')</span>'
+		) . '</a>';
+
+		$class = 'trash' === $this->view ? 'current' : '';
+		$views['trash'] = '<a href="' . esc_url( add_query_arg( 'link_status', 'trash', $base_url ) ) . '" class="' . $class . '">' . sprintf(
+			/* translators: %s: number of links */
+			esc_html__( 'Trash %s', 'gt-link-manager' ),
+			'<span class="count">(' . $trash . ')</span>'
+		) . '</a>';
+
+		return $views;
+	}
+
 	public function no_items(): void {
-		echo esc_html__( 'No links found.', 'gt-link-manager' );
+		if ( 'trash' === $this->view ) {
+			echo esc_html__( 'No links in the trash.', 'gt-link-manager' );
+		} else {
+			echo esc_html__( 'No links found.', 'gt-link-manager' );
+		}
 	}
 
 	/**
@@ -115,25 +181,74 @@ class GT_Link_List_Table extends WP_List_Table {
 			admin_url( 'admin.php' )
 		);
 
-		$delete_url = wp_nonce_url(
+		$branded_url = home_url( '/' . trim( $this->prefix, '/' ) . '/' . (string) $item['slug'] );
+
+		if ( 'trash' === $this->view ) {
+			$restore_url = wp_nonce_url(
+				add_query_arg(
+					array(
+						'page'   => 'gt-links',
+						'action' => 'restore',
+						'link'   => (int) $item['id'],
+					),
+					admin_url( 'admin.php' )
+				),
+				'gt_link_restore_' . (int) $item['id']
+			);
+
+			$delete_url = wp_nonce_url(
+				add_query_arg(
+					array(
+						'page'   => 'gt-links',
+						'action' => 'permanent_delete',
+						'link'   => (int) $item['id'],
+					),
+					admin_url( 'admin.php' )
+				),
+				'gt_link_permanent_delete_' . (int) $item['id']
+			);
+
+			$actions = array(
+				'restore' => '<a href="' . esc_url( $restore_url ) . '">' . esc_html__( 'Restore', 'gt-link-manager' ) . '</a>',
+				'delete'  => '<a href="' . esc_url( $delete_url ) . '" class="submitdelete">' . esc_html__( 'Delete Permanently', 'gt-link-manager' ) . '</a>',
+			);
+
+			return '<strong>' . esc_html( (string) $item['name'] ) . '</strong>' . $this->row_actions( $actions );
+		}
+
+		$trash_url = wp_nonce_url(
 			add_query_arg(
 				array(
 					'page'   => 'gt-links',
-					'action' => 'delete',
+					'action' => 'trash',
 					'link'   => (int) $item['id'],
 				),
 				admin_url( 'admin.php' )
 			),
-			'gt_link_delete_' . (int) $item['id']
+			'gt_link_trash_' . (int) $item['id']
 		);
 
-		$branded_url = home_url( '/' . trim( $this->prefix, '/' ) . '/' . (string) $item['slug'] );
+		$is_active = ! empty( $item['is_active'] );
+		$toggle_action = $is_active ? 'deactivate' : 'activate';
+		$toggle_label  = $is_active ? esc_html__( 'Deactivate', 'gt-link-manager' ) : esc_html__( 'Activate', 'gt-link-manager' );
+		$toggle_url    = wp_nonce_url(
+			add_query_arg(
+				array(
+					'page'   => 'gt-links',
+					'action' => $toggle_action,
+					'link'   => (int) $item['id'],
+				),
+				admin_url( 'admin.php' )
+			),
+			'gt_link_' . $toggle_action . '_' . (int) $item['id']
+		);
 
 		$actions = array(
 			'edit'       => '<a href="' . esc_url( $edit_url ) . '">' . esc_html__( 'Edit', 'gt-link-manager' ) . '</a>',
 			'quick_edit' => '<a href="#" class="gt-link-quick-edit" data-link-id="' . (int) $item['id'] . '" data-url="' . esc_attr( (string) $item['url'] ) . '" data-redirect-type="' . (int) $item['redirect_type'] . '">' . esc_html__( 'Quick Edit', 'gt-link-manager' ) . '</a>',
 			'copy_url'   => '<a href="#" class="gt-link-copy-url" data-copy-url="' . esc_attr( $branded_url ) . '">' . esc_html__( 'Copy URL', 'gt-link-manager' ) . '</a>',
-			'delete'     => '<a href="' . esc_url( $delete_url ) . '">' . esc_html__( 'Delete', 'gt-link-manager' ) . '</a>',
+			'toggle'     => '<a href="' . esc_url( $toggle_url ) . '">' . $toggle_label . '</a>',
+			'trash'      => '<a href="' . esc_url( $trash_url ) . '">' . esc_html__( 'Trash', 'gt-link-manager' ) . '</a>',
 			'view'       => '<a href="' . esc_url( $branded_url ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'View', 'gt-link-manager' ) . '</a>',
 		);
 
@@ -154,6 +269,17 @@ class GT_Link_List_Table extends WP_List_Table {
 	protected function column_url( $item ): string {
 		$url = (string) $item['url'];
 		return '<a href="' . esc_url( $url ) . '" target="_blank" rel="noopener noreferrer">' . esc_html( $url ) . '</a>';
+	}
+
+	/**
+	 * @param array<string, mixed> $item Item.
+	 */
+	protected function column_status( $item ): string {
+		if ( ! empty( $item['is_active'] ) ) {
+			return '<span class="gt-link-status gt-link-status--active">' . esc_html__( 'Active', 'gt-link-manager' ) . '</span>';
+		}
+
+		return '<span class="gt-link-status gt-link-status--inactive">' . esc_html__( 'Inactive', 'gt-link-manager' ) . '</span>';
 	}
 
 	/**
@@ -186,7 +312,7 @@ class GT_Link_List_Table extends WP_List_Table {
 	}
 
 	protected function extra_tablenav( $which ): void {
-		if ( 'top' !== $which ) {
+		if ( 'top' !== $which || 'trash' === $this->view ) {
 			return;
 		}
 
@@ -250,6 +376,15 @@ class GT_Link_List_Table extends WP_List_Table {
 			'rel'           => isset( $_REQUEST['rel'] ) ? sanitize_key( (string) wp_unslash( $_REQUEST['rel'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		);
 
+		// Apply view-based filtering.
+		if ( 'trash' === $this->view ) {
+			$filters['trashed'] = true;
+		} elseif ( 'active' === $this->view ) {
+			$filters['status'] = 'active';
+		} elseif ( 'inactive' === $this->view ) {
+			$filters['status'] = 'inactive';
+		}
+
 		$total_items = $this->db->count_links( $filters );
 		$this->items = $this->db->list_links( $filters, $current_page, $per_page, $orderby, strtoupper( $order ) );
 
@@ -280,8 +415,28 @@ class GT_Link_List_Table extends WP_List_Table {
 		}
 
 		foreach ( $link_ids as $link_id ) {
-			if ( 'bulk_delete' === $action ) {
+			if ( 'bulk_trash' === $action ) {
+				$this->db->trash_link( $link_id );
+				continue;
+			}
+
+			if ( 'bulk_restore' === $action ) {
+				$this->db->restore_link( $link_id );
+				continue;
+			}
+
+			if ( 'bulk_permanent_delete' === $action ) {
 				$this->db->delete_link( $link_id );
+				continue;
+			}
+
+			if ( 'bulk_activate' === $action ) {
+				$this->db->toggle_active( $link_id, true );
+				continue;
+			}
+
+			if ( 'bulk_deactivate' === $action ) {
+				$this->db->toggle_active( $link_id, false );
 				continue;
 			}
 
