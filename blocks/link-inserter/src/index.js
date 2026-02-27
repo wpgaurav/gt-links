@@ -7,10 +7,17 @@ import {
 	Spinner,
 	Notice,
 } from '@wordpress/components';
-import { useState, useEffect, useRef } from '@wordpress/element';
+import {
+	createElement,
+	Fragment,
+	useState,
+	useEffect,
+	useRef,
+} from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 
+const h = createElement;
 const config = window.gtLinkManagerEditor || {};
 const FORMAT_NAME = 'gt-link-manager/link-inserter';
 const FORMAT_TYPE_SETTINGS = {
@@ -50,7 +57,9 @@ function LinkInserterEdit( { value, onChange, isActive, activeAttributes } ) {
 			} )
 			.catch( () => {
 				if ( cancelled ) return;
-				setError( __( 'Could not load links.', 'gt-link-manager' ) );
+				setError(
+					__( 'Could not load links.', 'gt-link-manager' )
+				);
 				setResults( [] );
 			} )
 			.finally( () => {
@@ -135,78 +144,67 @@ function LinkInserterEdit( { value, onChange, isActive, activeAttributes } ) {
 		setIsOpen( true );
 	}
 
-	return (
-		<>
-			<RichTextToolbarButton
-				icon="admin-links"
-				title={ __( 'GT Link', 'gt-link-manager' ) }
-				onClick={ togglePopover }
-				onMouseDown={ stopDefaultEvent }
-				isActive={
-					isActive ||
-					!! ( activeAttributes && activeAttributes.url )
-				}
-			/>
-			{ isOpen && (
-				<Popover
-					anchor={ anchorRef.current }
-					onClose={ () => setIsOpen( false ) }
-					placement="bottom-start"
-					focusOnMount={ false }
-				>
-					<div style={ { padding: '12px', minWidth: '300px' } }>
-						<TextControl
-							label={ __(
-								'Search GT Links',
-								'gt-link-manager'
-							) }
-							value={ query }
-							onChange={ setQuery }
-							placeholder={ __(
-								'Type a link name or slug',
-								'gt-link-manager'
-							) }
-							ref={ queryInputRef }
-							__nextHasNoMarginBottom
-						/>
-						{ loading && <Spinner /> }
-						{ error && (
-							<Notice
-								status="error"
-								isDismissible={ false }
-							>
-								{ error }
-							</Notice>
-						) }
-						{ ! loading &&
-							! error &&
-							results.map( ( item ) => (
-								<Button
-									key={ item.id }
-									variant="secondary"
-									onClick={ () => insertLink( item ) }
-									style={ {
-										display: 'block',
-										width: '100%',
-										marginBottom: '6px',
-										textAlign: 'left',
-									} }
-								>
-									{ item.name + ' (' + item.slug + ')' }
-								</Button>
-							) ) }
-						{ ! loading && ! error && ! results.length && (
-							<p>
-								{ __(
-									'No links found.',
-									'gt-link-manager'
-								) }
-							</p>
-						) }
-					</div>
-				</Popover>
-			) }
-		</>
+	const popoverContent = h(
+		'div',
+		{ style: { padding: '12px', minWidth: '300px' } },
+		h( TextControl, {
+			label: __( 'Search GT Links', 'gt-link-manager' ),
+			value: query,
+			onChange: setQuery,
+			placeholder: __( 'Type a link name or slug', 'gt-link-manager' ),
+			ref: queryInputRef,
+			__nextHasNoMarginBottom: true,
+		} ),
+		loading && h( Spinner, null ),
+		error &&
+			h( Notice, { status: 'error', isDismissible: false }, error ),
+		! loading &&
+			! error &&
+			results.map( ( item ) =>
+				h(
+					Button,
+					{
+						key: item.id,
+						variant: 'secondary',
+						onClick: () => insertLink( item ),
+						style: {
+							display: 'block',
+							width: '100%',
+							marginBottom: '6px',
+							textAlign: 'left',
+						},
+					},
+					item.name + ' (' + item.slug + ')'
+				)
+			),
+		! loading &&
+			! error &&
+			! results.length &&
+			h( 'p', null, __( 'No links found.', 'gt-link-manager' ) )
+	);
+
+	return h(
+		Fragment,
+		null,
+		h( RichTextToolbarButton, {
+			icon: 'admin-links',
+			title: __( 'GT Link', 'gt-link-manager' ),
+			onClick: togglePopover,
+			onMouseDown: stopDefaultEvent,
+			isActive:
+				isActive || !! ( activeAttributes && activeAttributes.url ),
+		} ),
+		isOpen &&
+			h(
+				Popover,
+				{
+					anchor: anchorRef.current,
+					onClose: () => setIsOpen( false ),
+					placement: 'bottom-start',
+					focusOnMount: false,
+				},
+				popoverContent
+			)
 	);
 }
 
