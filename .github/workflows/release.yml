@@ -90,13 +90,31 @@ jobs:
           echo "Release notes generated:"
           cat release_notes.md
 
+      - name: Build block editor assets
+        run: |
+          set -euo pipefail
+
+          for block_dir in blocks/*/; do
+            if [ -f "${block_dir}package.json" ]; then
+              echo "Building assets in ${block_dir}"
+              (
+                cd "${block_dir}"
+                npm install --silent
+                npm run build
+              )
+            fi
+          done
+
+          test -f blocks/link-inserter/build/index.js
+          test -f blocks/link-inserter/build/index.asset.php
+
       - name: Create plugin zip
         run: |
           mkdir -p build/gt-link-manager
 
           rsync -av \
             --exclude='.*' \
-            --exclude='build' \
+            --exclude='/build/' \
             --exclude='node_modules' \
             --exclude='*.log' \
             --exclude='package-lock.json' \
