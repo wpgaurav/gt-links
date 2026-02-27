@@ -3,7 +3,7 @@
  * Plugin Name:       GT Link Manager
  * Plugin URI:        https://gauravtiwari.org/
  * Description:       Fast pretty-link manager with direct redirects and low overhead.
- * Version:           1.2.1
+ * Version:           1.2.2
  * Requires at least: 6.4
  * Requires PHP:      8.2
  * Author:            Gaurav Tiwari
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'GT_LINK_MANAGER_VERSION' ) ) {
-	define( 'GT_LINK_MANAGER_VERSION', '1.2.1' );
+	define( 'GT_LINK_MANAGER_VERSION', '1.2.2' );
 }
 
 if ( ! defined( 'GT_LINK_MANAGER_FILE' ) ) {

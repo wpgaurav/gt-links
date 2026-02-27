@@ -4,7 +4,7 @@ Tags: links, redirects, affiliate links, pretty links, marketing
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.2
-Stable tag: 1.2.1
+Stable tag: 1.2.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,9 +63,11 @@ The plugin checks request URI early and loads the matching slug from a unique in
 
 == Changelog ==
 
-= 1.2.1 =
-* Fixed block editor link inserter not appearing on WordPress 6.8+. Removed deprecated useAnchor dependency that crashed the toolbar button.
-* Popover now anchors to the toolbar button for reliable positioning across all WordPress versions.
+= 1.2.2 =
+* Fixed block editor link inserter not appearing on WordPress 6.8+.
+* Removed deprecated useAnchor hook that crashed the toolbar button on render.
+* Eliminated react-jsx-runtime dependency that prevented the script from loading on some WordPress versions.
+* Popover now anchors to the toolbar button for reliable positioning.
 
 = 1.2.0 =
 * Fixed critical bug: links disappeared after 1.1.9 update because new DB columns were not added on plugin update (only on fresh activation).
@@ -152,7 +154,7 @@ The plugin checks request URI early and loads the matching slug from a unique in
 
 == Upgrade Notice ==
 
-= 1.2.1 =
+= 1.2.2 =
 Fixes block editor GT Link toolbar button not showing on WordPress 6.8+.
 
 = 1.2.0 =
