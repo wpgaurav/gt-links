@@ -1,11 +1,11 @@
 <?php
 /**
  * Plugin Name:       GT Link Manager
- * Plugin URI:        https://gauravtiwari.org/
+ * Plugin URI:        https://wordpress.org/plugins/gt-link-manager/
  * Description:       Fast pretty-link manager with direct redirects and low overhead.
- * Version:           1.2.3
+ * Version:           1.3.0
  * Requires at least: 6.4
- * Requires PHP:      8.2
+ * Requires PHP:      8.0
  * Author:            Gaurav Tiwari
  * Author URI:        https://gauravtiwari.org/
  * License:           GPL-2.0-or-later
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'GT_LINK_MANAGER_VERSION' ) ) {
-	define( 'GT_LINK_MANAGER_VERSION', '1.2.3' );
+	define( 'GT_LINK_MANAGER_VERSION', '1.3.0' );
 }
 
 if ( ! defined( 'GT_LINK_MANAGER_FILE' ) ) {
@@ -39,6 +39,7 @@ require_once GT_LINK_MANAGER_PATH . 'includes/class-gt-link-activator.php';
 require_once GT_LINK_MANAGER_PATH . 'includes/class-gt-link-deactivator.php';
 require_once GT_LINK_MANAGER_PATH . 'includes/class-gt-link-db.php';
 require_once GT_LINK_MANAGER_PATH . 'includes/class-gt-link-redirect.php';
+require_once GT_LINK_MANAGER_PATH . 'includes/class-gt-link-admin-pages.php';
 require_once GT_LINK_MANAGER_PATH . 'includes/class-gt-link-admin.php';
 require_once GT_LINK_MANAGER_PATH . 'includes/class-gt-link-rest-api.php';
 require_once GT_LINK_MANAGER_PATH . 'includes/class-gt-link-block-editor.php';

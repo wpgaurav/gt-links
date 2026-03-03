@@ -80,6 +80,7 @@ body.gt-links_page_gt-links-license .form-table th {
 	color: var(--gtlm-text);
 	font-weight: 600;
 	width: 230px;
+	padding: 12px 10px;
 }
 
 body.toplevel_page_gt-links .form-table td,
@@ -89,8 +90,7 @@ body.gt-links_page_gt-links-settings .form-table td,
 body.gt-links_page_gt-links-import-export .form-table td,
 body.gt-links_page_gt-links-license .form-table td {
 	color: var(--gtlm-muted);
-	padding-top: 12px;
-	padding-bottom: 12px;
+	padding: 12px 10px;
 }
 
 body.toplevel_page_gt-links .form-table input[type="text"],
@@ -134,8 +134,8 @@ body.gt-links_page_gt-links-categories .button-primary,
 body.gt-links_page_gt-links-settings .button-primary,
 body.gt-links_page_gt-links-import-export .button-primary,
 body.gt-links_page_gt-links-license .button-primary {
-	background: var(--gtlm-accent);
-	border-color: var(--gtlm-accent);
+	background: var(--wp-admin-theme-color, #2271b1);
+	border-color: var(--wp-admin-theme-color, #2271b1);
 }
 
 body.toplevel_page_gt-links .button-primary:hover,
@@ -144,8 +144,8 @@ body.gt-links_page_gt-links-categories .button-primary:hover,
 body.gt-links_page_gt-links-settings .button-primary:hover,
 body.gt-links_page_gt-links-import-export .button-primary:hover,
 body.gt-links_page_gt-links-license .button-primary:hover {
-	background: var(--gtlm-accent-dark);
-	border-color: var(--gtlm-accent-dark);
+	background: var(--wp-admin-theme-color-darker-10, #135e96);
+	border-color: var(--wp-admin-theme-color-darker-10, #135e96);
 }
 
 body.toplevel_page_gt-links .wp-list-table,
@@ -316,15 +316,6 @@ body.gt-links_page_gt-links-import-export .tablenav.bottom {
 	border-bottom: none;
 }
 
-.gtlm-license-card {
-	background: var(--gtlm-card);
-	border: 1px solid var(--gtlm-border);
-	border-radius: var(--gtlm-radius);
-	padding: 20px 24px;
-	max-width: 600px;
-	margin-top: 20px;
-}
-
 body.toplevel_page_gt-links .wrap .button,
 body.gt-links_page_gt-links-edit .wrap .button,
 body.gt-links_page_gt-links-categories .wrap .button,
@@ -334,6 +325,16 @@ body.gt-links_page_gt-links-license .wrap .button {
 	min-height: 34px;
 	line-height: 32px;
 	border-radius: 6px;
+}
+
+/* License page */
+.gtlm-license-card {
+	background: var(--gtlm-card);
+	border: 1px solid var(--gtlm-border);
+	border-radius: var(--gtlm-radius);
+	padding: 20px 24px;
+	max-width: 600px;
+	margin-top: 20px;
 }
 
 .gtlm-license-card h2 {

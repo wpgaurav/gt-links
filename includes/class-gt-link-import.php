@@ -106,7 +106,7 @@ class GT_Link_Import {
 		echo '<input type="hidden" name="gt_import_export_action" value="preview_csv" />';
 		echo '<table class="form-table" role="presentation"><tbody>';
 		echo '<tr><th scope="row"><label for="gt-import-file">' . esc_html__( 'CSV File', 'gt-link-manager' ) . '</label></th><td><input type="file" name="import_file" id="gt-import-file" accept=".csv,text/csv" required /></td></tr>';
-		echo '<tr><th scope="row">' . esc_html__( 'Preset', 'gt-link-manager' ) . '</th><td><label><input type="radio" name="preset" value="generic" checked /> ' . esc_html__( 'Generic', 'gt-link-manager' ) . '</label><br /><label><input type="radio" name="preset" value="linkcentral" /> ' . esc_html__( 'LinkCentral', 'gt-link-manager' ) . '</label></td></tr>';
+		echo '<tr><th scope="row">' . esc_html__( 'Preset', 'gt-link-manager' ) . '</th><td><label><input type="radio" name="preset" value="generic" checked /> ' . esc_html__( 'Generic', 'gt-link-manager' ) . '</label><br /><label><input type="radio" name="preset" value="linkcentral" /> ' . esc_html__( 'LinkCentral', 'gt-link-manager' ) . '</label><br /><label><input type="radio" name="preset" value="prettylinks" /> ' . esc_html__( 'Pretty Links', 'gt-link-manager' ) . '</label></td></tr>';
 		echo '</tbody></table>';
 		submit_button( esc_html__( 'Preview CSV', 'gt-link-manager' ) );
 		echo '<div id="gtlm-import-progress-wrap" style="display:none;"><p>' . esc_html__( 'Processing file...', 'gt-link-manager' ) . '</p><progress id="gtlm-import-progress"></progress></div>';
@@ -131,7 +131,7 @@ class GT_Link_Import {
 		}
 		echo '</tr></thead><tbody>';
 		if ( empty( $rows ) ) {
-			echo '<tr><td colspan="' . max( 1, count( $header ) ) . '">' . esc_html__( 'No sample rows found.', 'gt-link-manager' ) . '</td></tr>';
+			echo '<tr><td colspan="' . (int) max( 1, count( $header ) ) . '">' . esc_html__( 'No sample rows found.', 'gt-link-manager' ) . '</td></tr>';
 		}
 		foreach ( $rows as $row ) {
 			echo '<tr>';
@@ -186,11 +186,12 @@ class GT_Link_Import {
 	}
 
 	private function export_csv(): void {
+		// Nonce verified in handle_actions() before this method is called.
 		$filters = array(
-			'search'        => sanitize_text_field( (string) wp_unslash( $_POST['export_search'] ?? '' ) ),
-			'category_id'   => absint( $_POST['export_category_id'] ?? 0 ),
-			'redirect_type' => absint( $_POST['export_redirect_type'] ?? 0 ),
-			'rel'           => sanitize_key( (string) wp_unslash( $_POST['export_rel'] ?? '' ) ),
+			'search'        => sanitize_text_field( (string) wp_unslash( $_POST['export_search'] ?? '' ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			'category_id'   => absint( $_POST['export_category_id'] ?? 0 ), // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			'redirect_type' => absint( $_POST['export_redirect_type'] ?? 0 ), // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			'rel'           => sanitize_key( (string) wp_unslash( $_POST['export_rel'] ?? '' ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		);
 
 		$rows = $this->db->list_links_for_export( $filters );
@@ -199,12 +200,12 @@ class GT_Link_Import {
 		header( 'Content-Type: text/csv; charset=utf-8' );
 		header( 'Content-Disposition: attachment; filename=gt-links-' . gmdate( 'Y-m-d-His' ) . '.csv' );
 
-		$output = fopen( 'php://output', 'w' );
+		$output = fopen( 'php://output', 'w' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
 		if ( false === $output ) {
 			exit;
 		}
 
-		fputcsv( $output, array( 'name', 'slug', 'url', 'redirect_type', 'rel', 'noindex', 'category', 'tags', 'notes' ) );
+		fputcsv( $output, array( 'name', 'slug', 'url', 'redirect_type', 'rel', 'noindex', 'category', 'tags', 'notes' ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fputcsv
 
 		$categories = $this->db->get_categories();
 		$cat_map    = array();
@@ -213,6 +214,7 @@ class GT_Link_Import {
 		}
 
 		foreach ( $rows as $row ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fputcsv
 			fputcsv(
 				$output,
 				array(
@@ -229,7 +231,7 @@ class GT_Link_Import {
 			);
 		}
 
-		fclose( $output );
+		fclose( $output ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 		exit;
 	}
 
@@ -239,7 +241,7 @@ class GT_Link_Import {
 			$this->cleanup_preview( $existing_preview );
 		}
 
-		if ( ! isset( $_FILES['import_file']['tmp_name'] ) ) {
+		if ( ! isset( $_FILES['import_file']['tmp_name'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			$this->redirect_notice( 'import_failed' );
 		}
 
@@ -248,7 +250,7 @@ class GT_Link_Import {
 		}
 
 		$uploaded = wp_handle_upload(
-			$_FILES['import_file'],
+			$_FILES['import_file'], // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			array( 'test_form' => false )
 		);
 
@@ -257,28 +259,28 @@ class GT_Link_Import {
 		}
 
 		$file_path = (string) $uploaded['file'];
-		$handle    = fopen( $file_path, 'r' );
+		$handle    = fopen( $file_path, 'r' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
 		if ( false === $handle ) {
 			$this->redirect_notice( 'import_failed' );
 		}
 
-		$header = fgetcsv( $handle );
+		$header = fgetcsv( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fgetcsv
 		if ( ! is_array( $header ) || empty( $header ) ) {
-			fclose( $handle );
+			fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 			$this->redirect_notice( 'import_failed' );
 		}
 
 		$rows = array();
 		for ( $i = 0; $i < 5; $i++ ) {
-			$row = fgetcsv( $handle );
+			$row = fgetcsv( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fgetcsv
 			if ( false === $row || ! is_array( $row ) ) {
 				break;
 			}
 			$rows[] = $row;
 		}
-		fclose( $handle );
+		fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 
-		$preset = isset( $_POST['preset'] ) ? sanitize_key( (string) wp_unslash( $_POST['preset'] ) ) : 'generic';
+		$preset = isset( $_POST['preset'] ) ? sanitize_key( (string) wp_unslash( $_POST['preset'] ) ) : 'generic'; // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		$token  = wp_generate_uuid4();
 
 		$state = array(
@@ -300,8 +302,9 @@ class GT_Link_Import {
 			$this->redirect_notice( 'import_failed' );
 		}
 
-		$token = isset( $_POST['preview_token'] ) ? sanitize_text_field( (string) wp_unslash( $_POST['preview_token'] ) ) : '';
-		if ( '' === $token || $token !== (string) ( $preview['token'] ?? '' ) ) {
+		// Nonce verified in handle_actions() before this method is called.
+		$token = isset( $_POST['preview_token'] ) ? sanitize_text_field( (string) wp_unslash( $_POST['preview_token'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		if ( '' === $token || (string) ( $preview['token'] ?? '' ) !== $token ) {
 			$this->redirect_notice( 'import_failed' );
 		}
 
@@ -310,24 +313,24 @@ class GT_Link_Import {
 			$this->redirect_notice( 'import_failed' );
 		}
 
-		$map = isset( $_POST['map'] ) && is_array( $_POST['map'] ) ? array_map( 'intval', (array) wp_unslash( $_POST['map'] ) ) : array();
+		$map = isset( $_POST['map'] ) && is_array( $_POST['map'] ) ? array_map( 'intval', (array) wp_unslash( $_POST['map'] ) ) : array(); // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		if ( ! isset( $map['name'], $map['url'] ) || (int) $map['name'] < 0 || (int) $map['url'] < 0 ) {
 			$this->redirect_notice( 'import_bad_columns' );
 		}
 
-		$mode = isset( $_POST['duplicate_mode'] ) ? sanitize_key( (string) wp_unslash( $_POST['duplicate_mode'] ) ) : 'skip';
+		$mode = isset( $_POST['duplicate_mode'] ) ? sanitize_key( (string) wp_unslash( $_POST['duplicate_mode'] ) ) : 'skip'; // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		if ( ! in_array( $mode, array( 'skip', 'overwrite', 'suffix' ), true ) ) {
 			$mode = 'skip';
 		}
 
-		$handle = fopen( $file_path, 'r' );
+		$handle = fopen( $file_path, 'r' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
 		if ( false === $handle ) {
 			$this->redirect_notice( 'import_failed' );
 		}
 
-		$header = fgetcsv( $handle );
+		$header = fgetcsv( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fgetcsv
 		if ( ! is_array( $header ) ) {
-			fclose( $handle );
+			fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 			$this->redirect_notice( 'import_failed' );
 		}
 
@@ -335,7 +338,7 @@ class GT_Link_Import {
 		$updated  = 0;
 		$skipped  = 0;
 
-		while ( ( $row = fgetcsv( $handle ) ) !== false ) {
+		while ( ( $row = fgetcsv( $handle ) ) !== false ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fgetcsv
 			if ( ! is_array( $row ) ) {
 				continue;
 			}
@@ -373,7 +376,7 @@ class GT_Link_Import {
 			}
 		}
 
-		fclose( $handle );
+		fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 		$this->cleanup_preview( $preview );
 
 		$this->redirect_notice(
@@ -420,6 +423,16 @@ class GT_Link_Import {
 			$map['notes']         = $normalized['notes'] ?? $map['notes'];
 		}
 
+		if ( 'prettylinks' === $preset ) {
+			$map['name']          = $normalized['name'] ?? $map['name'];
+			$map['slug']          = $normalized['slug'] ?? $map['slug'];
+			$map['url']           = $normalized['url'] ?? $map['url'];
+			$map['redirect_type'] = $normalized['redirect_type'] ?? $map['redirect_type'];
+			$map['rel']           = $normalized['nofollow'] ?? $map['rel'];
+			$map['notes']         = $normalized['description'] ?? $map['notes'];
+			$map['category']      = $normalized['link_categories'] ?? ( $normalized['category_id'] ?? $map['category'] );
+		}
+
 		return $map;
 	}
 
@@ -451,7 +464,13 @@ class GT_Link_Import {
 		}
 
 		$category_id = $this->resolve_category_id( $get( 'category' ) );
-		$rel_tokens  = array_filter( array_map( 'sanitize_key', array_map( 'trim', explode( ',', str_replace( ' ', ',', strtolower( $get( 'rel' ) ) ) ) ) ) );
+		$raw_rel     = $get( 'rel' );
+		if ( '1' === $raw_rel ) {
+			$raw_rel = 'nofollow';
+		} elseif ( '0' === $raw_rel ) {
+			$raw_rel = '';
+		}
+		$rel_tokens  = array_filter( array_map( 'sanitize_key', array_map( 'trim', explode( ',', str_replace( ' ', ',', strtolower( $raw_rel ) ) ) ) ) );
 		$allowed_rel = array_intersect( $rel_tokens, array( 'nofollow', 'sponsored', 'ugc' ) );
 		$noindex_raw = strtolower( $get( 'noindex' ) );
 
@@ -482,7 +501,13 @@ class GT_Link_Import {
 			}
 		}
 
-		return $this->db->insert_category( array( 'name' => $category_name, 'slug' => $slug, 'parent_id' => 0 ) );
+		return $this->db->insert_category(
+			array(
+				'name'      => $category_name,
+				'slug'      => $slug,
+				'parent_id' => 0,
+			)
+		);
 	}
 
 	private function next_available_slug( string $base_slug ): string {
