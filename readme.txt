@@ -4,7 +4,7 @@ Tags: links, redirects, affiliate links, pretty links, marketing
 Requires at least: 6.4
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.3.0
+Stable tag: 1.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,9 @@ The plugin checks request URI early and loads the matching slug from a unique in
 5. Settings with diagnostics
 
 == Changelog ==
+
+= 1.3.1 =
+* Block editor: aligned GT Link popover anchoring with core rich text behavior using selection-based anchor.
 
 = 1.3.0 =
 * Refactored admin into separate actions and rendering classes for maintainability.
@@ -170,6 +173,9 @@ The plugin checks request URI early and loads the matching slug from a unique in
 * LinkCentral-compatible CSV preset
 
 == Upgrade Notice ==
+
+= 1.3.1 =
+Fixes GT Link toolbar popover alignment in the block editor to match core behavior.
 
 = 1.3.0 =
 Admin refactor, Pretty Links import preset, improved sanitization, build tooling, and PHP 8.0 support.
