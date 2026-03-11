@@ -45,6 +45,7 @@ jobs:
           fi
           echo "Version verified: $PLUGIN_VERSION"
 
+      # ── Generate Changelog ──────────────────────────────────────
       - name: Generate changelog
         id: changelog
         env:
@@ -84,6 +85,7 @@ jobs:
           echo "--- Generated changelog ---"
           cat "$CHANGELOG_FILE"
 
+      # ── Build Assets ────────────────────────────────────────────
       - name: Build block editor assets
         run: |
           set -euo pipefail
@@ -99,6 +101,7 @@ jobs:
             fi
           done
 
+      # ── Assemble Distribution ───────────────────────────────────
       - name: Assemble distribution
         run: |
           mkdir -p "build-release/${PLUGIN_SLUG}"
@@ -152,6 +155,7 @@ jobs:
           FILE_COUNT=$(find "$DIST" -type f | wc -l | tr -d ' ')
           echo "  Files: ${FILE_COUNT}"
 
+      # ── Package & Upload ────────────────────────────────────────
       - name: Create zip file
         id: zip
         env:
@@ -194,13 +198,13 @@ jobs:
           path: ${{ steps.zip.outputs.ZIP_NAME }}
           retention-days: 90
 
+      # ── Summary ─────────────────────────────────────────────────
       - name: Job summary
         env:
           VERSION: ${{ steps.get_version.outputs.VERSION }}
           ZIP_NAME: ${{ steps.zip.outputs.ZIP_NAME }}
           ZIP_SIZE: ${{ steps.zip.outputs.ZIP_SIZE }}
           FILE_COUNT: ${{ steps.zip.outputs.FILE_COUNT }}
-          CHANGELOG_FILE: ${{ steps.changelog.outputs.CHANGELOG_FILE }}
         run: |
           echo "## Release v${VERSION}" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
@@ -211,4 +215,4 @@ jobs:
           echo "| **Files** | ${FILE_COUNT} |" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "### Changelog" >> "$GITHUB_STEP_SUMMARY"
-          cat "$CHANGELOG_FILE" >> "$GITHUB_STEP_SUMMARY"
+          cat "${{ steps.changelog.outputs.CHANGELOG_FILE }}" >> "$GITHUB_STEP_SUMMARY"
